@@ -1,0 +1,29 @@
+/* Design tokens — dark control-room palette, ported verbatim from the v1
+   single-file tool (post-apps/agv-fleet-lab). Keep this file the single
+   source of truth for color; components reference the custom properties,
+   never raw hex values. */
+:root {
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --ink-3: #898781;
+  --grid: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #3987e5;
+
+  /* vehicle / time states — validated categorical set (dark surface) */
+  --c-loaded: #3987e5;
+  --c-empty: #199e70;
+  --c-handling: #9085e9;
+  --c-blocked: #e66767;
+  --c-charging: #c98500;
+  --c-idle: #52514e; /* outline-only; idle = absence of work */
+
+  /* status (icon + label always; never used as a series) */
+  --s-good: #0ca30c;
+  --s-warning: #fab219;
+  --s-serious: #ec835a;
+  --s-critical: #d03b3b;
+}
