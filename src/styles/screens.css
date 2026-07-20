@@ -1,3 +1,20 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.form-error {
+  color: var(--s-critical);
+  font-size: 12.5px;
+  margin: 8px 0 0;
+}
+
 /* Layout */
 .main-grid {
   display: grid;
@@ -342,6 +359,64 @@
 .data-table__row--highlight td {
   color: var(--ink);
   background: rgba(57, 135, 229, 0.08);
+}
+
+/* Scenario manager */
+.scenario-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scenario-list__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+}
+.scenario-list__row--active {
+  border-color: var(--accent);
+  background: rgba(57, 135, 229, 0.08);
+}
+.scenario-list__select {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.scenario-list__name {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scenario-list__meta {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.scenario-list__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.scenario-manager__data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--grid);
 }
 
 /* Form fields */

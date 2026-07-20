@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useScenarios } from './hooks/useScenarios.ts'
+import { ScenarioManager } from './components/scenario/ScenarioManager.tsx'
 import { ScenarioForm } from './components/inputs/ScenarioForm.tsx'
 import { SimView } from './components/simview/SimView.tsx'
 import { AnalyticCard } from './components/results/AnalyticCard.tsx'
@@ -9,7 +10,18 @@ import { analyze } from './lib/engine/analytic.ts'
 import { toAnalyticParams } from './lib/simParams.ts'
 
 function App() {
-  const { activeScenario, updateParams, renameActive } = useScenarios()
+  const {
+    activeScenario,
+    scenarios,
+    updateParams,
+    renameActive,
+    selectScenario,
+    createScenario,
+    duplicateScenario,
+    deleteScenario,
+    exportJson,
+    importJson,
+  } = useScenarios()
   const analytic = useMemo(() => analyze(toAnalyticParams(activeScenario.params)), [activeScenario.params])
 
   return (
@@ -24,6 +36,16 @@ function App() {
       </header>
       <main className="main-grid">
         <div className="main-grid__col">
+          <ScenarioManager
+            scenarios={scenarios}
+            activeScenarioId={activeScenario.id}
+            selectScenario={selectScenario}
+            createScenario={createScenario}
+            duplicateScenario={duplicateScenario}
+            deleteScenario={deleteScenario}
+            exportJson={exportJson}
+            importJson={importJson}
+          />
           <ScenarioForm scenario={activeScenario} updateParams={updateParams} renameActive={renameActive} />
         </div>
         <div className="main-grid__col">
