@@ -9,6 +9,7 @@
  */
 import { mulberry32, expSample, triSample, percentile } from '../prng.ts'
 import { sampleOrigin, sampleDestination } from './demand.ts'
+import { DISPATCH_STRATEGIES, type DispatchContext, type DispatchRuleKey } from './dispatch.ts'
 
 export const ST = {
   TO_PICKUP: 'toPickup',
@@ -53,6 +54,8 @@ export interface SimParams {
   /** Per-station demand weights. `null`/`undefined` = uniform (v1 behavior). */
   originWeights?: number[] | null
   destWeights?: number[] | null
+  /** `undefined` = nearestVehicle (v1 behavior). */
+  dispatchRule?: DispatchRuleKey
 }
 
 export interface Station {
@@ -76,6 +79,8 @@ export interface Vehicle {
   dwellLeft: number
   targetS: number | null
   offTrack: boolean
+  /** Sim-time this vehicle last entered ST.IDLE (for longest-idle dispatch). */
+  idleSince: number
 }
 
 export type StateBucketKey = 'loaded' | 'empty' | 'handling' | 'blocked' | 'charging' | 'idle'
@@ -149,6 +154,7 @@ export class Sim {
         dwellLeft: 0,
         targetS: null,
         offTrack: false,
+        idleSince: 0,
       })
     }
     this.pending = [] // jobs waiting for a vehicle (FCFS)
@@ -184,19 +190,22 @@ export class Sim {
   }
 
   dispatch(): void {
+    const strategy = DISPATCH_STRATEGIES[this.P.dispatchRule ?? 'nearestVehicle']
+    // ctx.pending/vehicles are references to this.pending/this.vehicles, so
+    // mutations below (shift) are visible to the strategy on the next call.
+    const ctx: DispatchContext = {
+      vehicles: this.vehicles,
+      pending: this.pending,
+      stations: this.stations,
+      battery: this.P.battery,
+      thresholdPct: this.P.thresholdPct,
+      idleState: ST.IDLE,
+      fwd: (from, to) => this.fwd(from, to),
+    }
     while (this.pending.length) {
-      let best: Vehicle | null = null
-      let bestDist = Infinity
-      for (const v of this.vehicles) {
-        if (v.state !== ST.IDLE) continue
-        if (this.P.battery && v.soc < this.P.thresholdPct) continue
-        const d = this.fwd(v.pos, this.stations[this.pending[0].origin].s)
-        if (d < bestDist) {
-          bestDist = d
-          best = v
-        }
-      }
-      if (!best) return
+      const assignment = strategy(ctx)
+      if (!assignment) return
+      const best = this.vehicles.find((v) => v.id === assignment.vehicleId)!
       best.job = this.pending.shift()!
       best.state = ST.TO_PICKUP
       best.targetS = this.stations[best.job.origin].s
@@ -269,6 +278,7 @@ export class Sim {
             } else {
               v.state = ST.IDLE
               v.targetS = null
+              v.idleSince = this.t
             }
           }
         }
@@ -280,6 +290,7 @@ export class Sim {
           this.charging.delete(v.id)
           v.state = ST.IDLE
           v.targetS = null
+          v.idleSince = this.t
           v.offTrack = false // re-enter at the bay
         }
       } else if (MOVING.has(v.state)) {
@@ -318,7 +329,10 @@ export class Sim {
             if (this.charging.size < P.chargeBays) {
               this.charging.add(v.id)
               v.state = ST.CHARGING
-            } else v.state = ST.IDLE // park and wait for a bay (park policy)
+            } else {
+              v.state = ST.IDLE // park and wait for a bay (park policy)
+              v.idleSince = this.t
+            }
           } else if (v.state === ST.IDLE) {
             v.targetS = null
             v.offTrack = true

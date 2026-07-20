@@ -12,14 +12,22 @@ export const SCHEMA_VERSION = 1
 /** Signature used to recognize this app's backup files (see backup.ts). */
 export const APP_SIGNATURE = 'agv-fleet-lab'
 
-export type DispatchRule = 'nearestVehicle' | 'fcfs' | 'longestWaitingPriority'
+import type { DispatchRuleKey } from '../lib/engine/dispatch.ts'
 
-export const DISPATCH_RULES: DispatchRule[] = ['nearestVehicle', 'fcfs', 'longestWaitingPriority']
+/**
+ * The job queue is always FCFS-ordered by arrival, so "which job goes next"
+ * is already decided before dispatch runs — a rule can only differ on WHICH
+ * VEHICLE serves that job. (A literal "longest-waiting job priority" rule
+ * would be a no-op: the queue already serves the longest-waiting job first.)
+ */
+export type DispatchRule = DispatchRuleKey
+
+export const DISPATCH_RULES: DispatchRule[] = ['nearestVehicle', 'fcfs', 'longestIdleVehicle']
 
 export const DISPATCH_RULE_LABEL: Record<DispatchRule, string> = {
-  nearestVehicle: 'Nearest idle vehicle',
-  fcfs: 'First idle vehicle (FCFS)',
-  longestWaitingPriority: 'Longest-waiting job priority',
+  nearestVehicle: 'Nearest idle vehicle (shortest travel)',
+  fcfs: 'First idle vehicle (FCFS, no optimization)',
+  longestIdleVehicle: 'Longest-idle vehicle (load balancing)',
 }
 
 /**

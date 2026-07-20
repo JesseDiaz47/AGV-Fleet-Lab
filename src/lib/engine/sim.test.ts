@@ -80,3 +80,30 @@ describe('Sim — fleet performance regression pins', () => {
     expect(st.busy).toBeCloseTo(0.74, 1)
   })
 })
+
+describe('Sim — dispatch rule wiring', () => {
+  it('an unset dispatchRule behaves identically to explicit nearestVehicle', () => {
+    const a = new Sim({ ...base }, 42)
+    a.runFor(WARMUP + 3600)
+    const b = new Sim({ ...base, dispatchRule: 'nearestVehicle' }, 42)
+    b.runFor(WARMUP + 3600)
+    expect(b.completed).toBe(a.completed)
+  })
+
+  it('fcfs and longestIdleVehicle still produce valid, stable-enough runs', () => {
+    for (const dispatchRule of ['fcfs', 'longestIdleVehicle'] as const) {
+      const st = batchRun({ ...base, fleet: 8, dispatchRule }, 42, 4)
+      expect(st.stranded).toBe(0)
+      expect(Number.isFinite(st.tph)).toBe(true)
+      expect(st.tph).toBeGreaterThan(0)
+    }
+  })
+
+  it('nearestVehicle throughput is at least as good as the naive fcfs baseline at a tight fleet size', () => {
+    // Nearest-vehicle dispatch is why the sim beats the analytic estimate;
+    // a naive FCFS-any-idle policy should never do better.
+    const nearest = batchRun({ ...base, fleet: 5, dispatchRule: 'nearestVehicle' }, 42, 8)
+    const fcfs = batchRun({ ...base, fleet: 5, dispatchRule: 'fcfs' }, 42, 8)
+    expect(nearest.tph).toBeGreaterThanOrEqual(fcfs.tph - 0.5) // small slack for stochastic noise
+  })
+})
