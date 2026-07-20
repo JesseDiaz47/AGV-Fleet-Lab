@@ -135,3 +135,24 @@ describe('Sim — shift profile wiring', () => {
     expect(st.stranded).toBeGreaterThanOrEqual(0)
   })
 })
+
+describe('Sim — lastBlockedIds (render-only, does not affect stats)', () => {
+  it('gets populated during congestion without changing completion counts', () => {
+    // Tight fleet + wide min gap forces congestion quickly, so some vehicle
+    // should get tallied as blocked within a short warm run.
+    const congested: SimParams = { ...base, fleet: 8, minGap: 15 }
+    const withTracking = new Sim(congested, 42)
+    let sawBlocked = false
+    for (let i = 0; i < 6000; i++) {
+      withTracking.step()
+      if (withTracking.lastBlockedIds.size > 0) sawBlocked = true
+    }
+    expect(sawBlocked).toBe(true)
+
+    // Reading lastBlockedIds is purely observational: an identical run that
+    // never reads it completes the same number of jobs.
+    const untouched = new Sim(congested, 42)
+    untouched.runFor(600)
+    expect(untouched.completed).toBe(withTracking.completed)
+  })
+})

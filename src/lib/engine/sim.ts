@@ -124,6 +124,8 @@ export class Sim {
   liveState: StateTime
   backlogStart: number | null
   strandedCount: number
+  /** Vehicle ids tallied as 'blocked' on the most recent step(). For rendering only — not read by stats(). */
+  lastBlockedIds: Set<number>
 
   constructor(P: SimParams, seed: number) {
     this.P = P
@@ -169,6 +171,7 @@ export class Sim {
     this.liveState = { loaded: 0, empty: 0, handling: 0, blocked: 0, charging: 0, idle: 0 } // since start (live tiles)
     this.backlogStart = null
     this.strandedCount = 0
+    this.lastBlockedIds = new Set()
   }
 
   fwd(from: number, to: number): number {
@@ -219,6 +222,7 @@ export class Sim {
     this.t += DT
     this.spawnJobs()
     this.dispatch()
+    this.lastBlockedIds.clear()
 
     const P = this.P
     const L = this.L
@@ -313,6 +317,7 @@ export class Sim {
         }
         if ((desired > 1e-9 && move <= 1e-9 && WORKING.has(v.state)) || (v.state === ST.TO_CHARGE && desired > 1e-9 && move <= 1e-9)) {
           bucket = 'blocked'
+          this.lastBlockedIds.add(v.id)
         }
         v.pos = (v.pos + move) % L
         v.soc = Math.max(0, v.soc - this.drainMove * DT)
