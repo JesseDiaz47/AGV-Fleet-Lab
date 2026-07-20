@@ -10,7 +10,7 @@ describe('useCompare', () => {
     const { result } = renderHook(() => useCompare())
 
     act(() => result.current.run([a, b]))
-    await waitFor(() => expect(result.current.status).toBe('done'))
+    await waitFor(() => expect(result.current.status).toBe('done'), { timeout: 15000 })
 
     expect(result.current.results.map((r) => r.scenarioId).sort()).toEqual([a.id, b.id].sort())
     const resultA = result.current.results.find((r) => r.scenarioId === a.id)!

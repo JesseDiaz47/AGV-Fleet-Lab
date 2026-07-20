@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
-import { useValidate } from '../../hooks/useValidate.ts'
-import { BUCKETS } from '../../lib/engine/sim.ts'
+import { BUCKETS, type SimStats } from '../../lib/engine/sim.ts'
+import type { ValidateStatus } from '../../hooks/useValidate.ts'
 import { fmtNum, fmtPercent, unit } from '../../lib/format.ts'
 import type { ScenarioParams } from '../../types/domain.ts'
 
@@ -9,22 +8,18 @@ const fmtSec = unit('s', 0)
 
 interface ValidateCardProps {
   params: ScenarioParams
-  scenarioId: string
+  status: ValidateStatus
+  result: SimStats | null
+  onRun: () => void
 }
 
 /** Runs the seeded discrete-event simulation at the scenario's chosen fleet size and reports whether it holds up. */
-export function ValidateCard({ params, scenarioId }: ValidateCardProps) {
-  const { status, result, run, reset } = useValidate()
-
-  // A different scenario invalidates the last run's result.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => reset(), [scenarioId])
-
+export function ValidateCard({ params, status, result, onRun }: ValidateCardProps) {
   return (
     <section className="card">
       <div className="card-title-row">
         <div className="card-title">Simulation validation</div>
-        <button type="button" className="btn btn-sm btn-primary" onClick={() => run(params)} disabled={status === 'running'}>
+        <button type="button" className="btn btn-sm btn-primary" onClick={onRun} disabled={status === 'running'}>
           {status === 'running' ? 'Running…' : 'Run validation'}
         </button>
       </div>
