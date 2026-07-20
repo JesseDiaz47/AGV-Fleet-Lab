@@ -8,6 +8,7 @@
  * sim.selftest.test.ts.
  */
 import { mulberry32, expSample, triSample, percentile } from '../prng.ts'
+import { sampleOrigin, sampleDestination } from './demand.ts'
 
 export const ST = {
   TO_PICKUP: 'toPickup',
@@ -49,6 +50,9 @@ export interface SimParams {
   chargeBays: number
   parkIdle: boolean
   fleet: number
+  /** Per-station demand weights. `null`/`undefined` = uniform (v1 behavior). */
+  originWeights?: number[] | null
+  destWeights?: number[] | null
 }
 
 export interface Station {
@@ -170,9 +174,8 @@ export class Sim {
 
   spawnJobs(): void {
     while (this.t >= this.nextArrival) {
-      const o = Math.floor(this.rngArr() * this.P.stations)
-      let d = Math.floor(this.rngArr() * (this.P.stations - 1))
-      if (d >= o) d++
+      const o = sampleOrigin(this.rngArr, this.P.stations, this.P.originWeights)
+      const d = sampleDestination(this.rngArr, this.P.stations, o, this.P.destWeights)
       this.pending.push({ origin: o, dest: d, created: this.nextArrival })
       this.stations[o].waiting++
       if (this.nextArrival > WARMUP) this.offered++
