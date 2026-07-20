@@ -102,3 +102,39 @@ describe('useScenarios — CRUD', () => {
     expect(result.current.scenarios.length).toBe(before)
   })
 })
+
+describe('useScenarios — compare selection', () => {
+  it('toggleCompare adds and removes an id', () => {
+    const { result } = renderHook(() => useScenarios())
+    const id = result.current.scenarios[0].id
+    act(() => result.current.toggleCompare(id))
+    expect(result.current.compareIds).toEqual([id])
+    act(() => result.current.toggleCompare(id))
+    expect(result.current.compareIds).toEqual([])
+  })
+
+  it('caps the compare selection at 4', () => {
+    const { result } = renderHook(() => useScenarios())
+    act(() => {
+      for (let i = 0; i < 5; i++) result.current.createScenario()
+    })
+    expect(result.current.scenarios.length).toBe(6)
+    act(() => {
+      for (const sc of result.current.scenarios) result.current.toggleCompare(sc.id)
+    })
+    expect(result.current.compareIds.length).toBe(4)
+  })
+
+  it('deleting a compared scenario removes it from the selection', () => {
+    const { result } = renderHook(() => useScenarios())
+    act(() => result.current.createScenario())
+    const [first, second] = result.current.scenarios
+    act(() => {
+      result.current.toggleCompare(first.id)
+      result.current.toggleCompare(second.id)
+    })
+    expect(result.current.compareIds).toEqual([first.id, second.id])
+    act(() => result.current.deleteScenario(second.id))
+    expect(result.current.compareIds).toEqual([first.id])
+  })
+})

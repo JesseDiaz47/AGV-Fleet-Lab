@@ -20,6 +20,7 @@ export interface UseScenarios {
   state: AppState
   activeScenario: Scenario
   scenarios: Scenario[]
+  compareIds: string[]
   updateParams: (patch: Partial<ScenarioParams>) => void
   renameActive: (name: string) => void
   renameScenario: (id: string, name: string) => void
@@ -27,6 +28,7 @@ export interface UseScenarios {
   createScenario: () => void
   duplicateScenario: (id: string) => void
   deleteScenario: (id: string) => void
+  toggleCompare: (id: string) => void
   exportJson: () => void
   importJson: (json: string) => Validated<AppState>
 }
@@ -105,6 +107,14 @@ export function useScenarios(): UseScenarios {
     })
   }, [])
 
+  const toggleCompare = useCallback((id: string) => {
+    setState((s) => {
+      if (s.compareIds.includes(id)) return { ...s, compareIds: s.compareIds.filter((cid) => cid !== id) }
+      if (s.compareIds.length >= 4) return s // compare view caps at 4
+      return { ...s, compareIds: [...s.compareIds, id] }
+    })
+  }, [])
+
   const exportJson = useCallback(() => {
     downloadJson(`agv-fleet-lab-${timestampSlug()}.json`, buildBackupEnvelope(state))
   }, [state])
@@ -119,6 +129,7 @@ export function useScenarios(): UseScenarios {
     state,
     activeScenario,
     scenarios: state.scenarios,
+    compareIds: state.compareIds,
     updateParams,
     renameActive,
     renameScenario,
@@ -126,6 +137,7 @@ export function useScenarios(): UseScenarios {
     createScenario,
     duplicateScenario,
     deleteScenario,
+    toggleCompare,
     exportJson,
     importJson,
   }

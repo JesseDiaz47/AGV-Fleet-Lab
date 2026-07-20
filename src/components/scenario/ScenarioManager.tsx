@@ -4,10 +4,12 @@ import type { UseScenarios } from '../../hooks/useScenarios.ts'
 interface ScenarioManagerProps {
   scenarios: UseScenarios['scenarios']
   activeScenarioId: string
+  compareIds: UseScenarios['compareIds']
   selectScenario: UseScenarios['selectScenario']
   createScenario: UseScenarios['createScenario']
   duplicateScenario: UseScenarios['duplicateScenario']
   deleteScenario: UseScenarios['deleteScenario']
+  toggleCompare: UseScenarios['toggleCompare']
   exportJson: UseScenarios['exportJson']
   importJson: UseScenarios['importJson']
 }
@@ -15,10 +17,12 @@ interface ScenarioManagerProps {
 export function ScenarioManager({
   scenarios,
   activeScenarioId,
+  compareIds,
   selectScenario,
   createScenario,
   duplicateScenario,
   deleteScenario,
+  toggleCompare,
   exportJson,
   importJson,
 }: ScenarioManagerProps) {
@@ -60,6 +64,15 @@ export function ScenarioManager({
               </span>
             </button>
             <div className="scenario-list__actions">
+              <label className="scenario-list__compare" title="Add to compare (up to 4)">
+                <input
+                  type="checkbox"
+                  checked={compareIds.includes(sc.id)}
+                  disabled={!compareIds.includes(sc.id) && compareIds.length >= 4}
+                  onChange={() => toggleCompare(sc.id)}
+                />
+                Compare
+              </label>
               <button type="button" className="btn btn-sm" onClick={() => duplicateScenario(sc.id)} title="Duplicate">
                 Duplicate
               </button>
@@ -76,6 +89,7 @@ export function ScenarioManager({
           </li>
         ))}
       </ul>
+      <p className="card-hint">Check up to 4 scenarios to compare side by side below.</p>
       <div className="scenario-manager__data">
         <button type="button" className="btn btn-sm" onClick={exportJson}>
           Export JSON backup

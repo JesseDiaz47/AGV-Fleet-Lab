@@ -6,6 +6,7 @@ import { SimView } from './components/simview/SimView.tsx'
 import { AnalyticCard } from './components/results/AnalyticCard.tsx'
 import { ValidateCard } from './components/results/ValidateCard.tsx'
 import { SweepSection } from './components/results/SweepSection.tsx'
+import { CompareView } from './components/compare/CompareView.tsx'
 import { analyze } from './lib/engine/analytic.ts'
 import { toAnalyticParams } from './lib/simParams.ts'
 
@@ -13,12 +14,14 @@ function App() {
   const {
     activeScenario,
     scenarios,
+    compareIds,
     updateParams,
     renameActive,
     selectScenario,
     createScenario,
     duplicateScenario,
     deleteScenario,
+    toggleCompare,
     exportJson,
     importJson,
   } = useScenarios()
@@ -39,10 +42,12 @@ function App() {
           <ScenarioManager
             scenarios={scenarios}
             activeScenarioId={activeScenario.id}
+            compareIds={compareIds}
             selectScenario={selectScenario}
             createScenario={createScenario}
             duplicateScenario={duplicateScenario}
             deleteScenario={deleteScenario}
+            toggleCompare={toggleCompare}
             exportJson={exportJson}
             importJson={importJson}
           />
@@ -55,6 +60,7 @@ function App() {
             <ValidateCard params={activeScenario.params} scenarioId={activeScenario.id} />
           </div>
           <SweepSection params={activeScenario.params} scenarioId={activeScenario.id} analyticNReq={analytic.nReq} />
+          <CompareView scenarios={scenarios} compareIds={compareIds} />
         </div>
       </main>
     </div>
