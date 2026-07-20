@@ -13,6 +13,9 @@ export const SCHEMA_VERSION = 1
 export const APP_SIGNATURE = 'agv-fleet-lab'
 
 import type { DispatchRuleKey } from '../lib/engine/dispatch.ts'
+import type { ShiftBlock } from '../lib/engine/demand.ts'
+
+export type { ShiftBlock }
 
 /**
  * The job queue is always FCFS-ordered by arrival, so "which job goes next"
@@ -75,13 +78,6 @@ export interface ScenarioParams {
    * a repeating 24h cycle. `null` = flat (matches v1 behavior exactly).
    */
   shiftProfile: ShiftBlock[] | null
-}
-
-export interface ShiftBlock {
-  /** Hour of day the block starts, 0-24, must be ascending and start at 0. */
-  startHour: number
-  /** Multiplier on nominal demand for this block, e.g. 1.5 = +50%. */
-  multiplier: number
 }
 
 export interface Scenario {

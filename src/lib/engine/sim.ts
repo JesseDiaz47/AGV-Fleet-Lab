@@ -7,8 +7,8 @@
  * Behavior must not change without a matching regression-test update — see
  * sim.selftest.test.ts.
  */
-import { mulberry32, expSample, triSample, percentile } from '../prng.ts'
-import { sampleOrigin, sampleDestination } from './demand.ts'
+import { mulberry32, triSample, percentile } from '../prng.ts'
+import { sampleOrigin, sampleDestination, nextArrivalTime, type ShiftBlock } from './demand.ts'
 import { DISPATCH_STRATEGIES, type DispatchContext, type DispatchRuleKey } from './dispatch.ts'
 
 export const ST = {
@@ -56,6 +56,8 @@ export interface SimParams {
   destWeights?: number[] | null
   /** `undefined` = nearestVehicle (v1 behavior). */
   dispatchRule?: DispatchRuleKey
+  /** Shift/time-of-day demand profile. `null`/`undefined` = flat (v1 behavior). */
+  shiftProfile?: ShiftBlock[] | null
 }
 
 export interface Station {
@@ -162,7 +164,7 @@ export class Sim {
     this.offered = 0 // jobs that arrived post-warmup (realized load)
     this.flowTimes = [] // post-warmup completions, seconds
     this.completionLog = [] // sim-times of completions (live rolling window)
-    this.nextArrival = this.t + expSample(this.rngArr, 3600 / P.demand)
+    this.nextArrival = nextArrivalTime(this.rngArr, P.demand, P.shiftProfile, this.t)
     this.stateTime = { loaded: 0, empty: 0, handling: 0, blocked: 0, charging: 0, idle: 0 } // post-warmup (batch stats)
     this.liveState = { loaded: 0, empty: 0, handling: 0, blocked: 0, charging: 0, idle: 0 } // since start (live tiles)
     this.backlogStart = null
@@ -185,7 +187,7 @@ export class Sim {
       this.pending.push({ origin: o, dest: d, created: this.nextArrival })
       this.stations[o].waiting++
       if (this.nextArrival > WARMUP) this.offered++
-      this.nextArrival += expSample(this.rngArr, 3600 / this.P.demand)
+      this.nextArrival = nextArrivalTime(this.rngArr, this.P.demand, this.P.shiftProfile, this.nextArrival)
     }
   }
 

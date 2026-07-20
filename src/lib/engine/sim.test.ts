@@ -107,3 +107,31 @@ describe('Sim — dispatch rule wiring', () => {
     expect(nearest.tph).toBeGreaterThanOrEqual(fcfs.tph - 0.5) // small slack for stochastic noise
   })
 })
+
+describe('Sim — shift profile wiring', () => {
+  it('an unset shiftProfile behaves identically to null', () => {
+    const a = new Sim({ ...base }, 42)
+    a.runFor(WARMUP + 3600)
+    const b = new Sim({ ...base, shiftProfile: null }, 42)
+    b.runFor(WARMUP + 3600)
+    expect(b.completed).toBe(a.completed)
+  })
+
+  it('a peaked shift profile still produces a valid, non-crashing run', () => {
+    const st = batchRun(
+      {
+        ...base,
+        fleet: 8,
+        shiftProfile: [
+          { startHour: 0, multiplier: 0.3 },
+          { startHour: 8, multiplier: 2 },
+          { startHour: 16, multiplier: 0.5 },
+        ],
+      },
+      42,
+      8,
+    )
+    expect(Number.isFinite(st.tph)).toBe(true)
+    expect(st.stranded).toBeGreaterThanOrEqual(0)
+  })
+})
