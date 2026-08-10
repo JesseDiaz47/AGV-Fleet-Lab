@@ -28,6 +28,7 @@ export function toSimParams(p: ScenarioParams): SimParams {
     destWeights: p.destWeights,
     dispatchRule: p.dispatchRule,
     shiftProfile: p.shiftProfile,
+    allowReversePickup: p.allowReversePickup,
   }
 }
 

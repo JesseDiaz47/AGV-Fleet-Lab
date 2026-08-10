@@ -58,6 +58,14 @@ export interface SimParams {
   dispatchRule?: DispatchRuleKey
   /** Shift/time-of-day demand profile. `null`/`undefined` = flat (v1 behavior). */
   shiftProfile?: ShiftBlock[] | null
+  /**
+   * Allow empty (idle) vehicles to backtrack toward a pickup instead of
+   * lapping forward. When false, behavior is identical to the v1 one-way
+   * loop (v1's own regression numbers pin to this). When true, the
+   * dispatcher picks the shorter of fwd vs. rev empty travel to the
+   * pickup station.
+   */
+  allowReversePickup?: boolean
 }
 
 export interface Station {
@@ -83,6 +91,12 @@ export interface Vehicle {
   offTrack: boolean
   /** Sim-time this vehicle last entered ST.IDLE (for longest-idle dispatch). */
   idleSince: number
+  /**
+   * Direction of travel. +1 = forward (v1 default), -1 = reverse (only legal
+   * while empty on the way to a pickup). Used only when
+   * `allowReversePickup` is on and the dispatcher chose the shorter path.
+   */
+  heading: 1 | -1
 }
 
 export type StateBucketKey = 'loaded' | 'empty' | 'handling' | 'blocked' | 'charging' | 'idle'
@@ -159,6 +173,7 @@ export class Sim {
         targetS: null,
         offTrack: false,
         idleSince: 0,
+        heading: 1, // v1 default; reverse is only assigned by the dispatcher
       })
     }
     this.pending = [] // jobs waiting for a vehicle (FCFS)
@@ -207,13 +222,22 @@ export class Sim {
       idleState: ST.IDLE,
       fwd: (from, to) => this.fwd(from, to),
     }
+    const allowReverse = this.P.allowReversePickup === true
     while (this.pending.length) {
       const assignment = strategy(ctx)
       if (!assignment) return
       const best = this.vehicles.find((v) => v.id === assignment.vehicleId)!
+      const job = this.pending[0]
+      const pickupS = this.stations[job.origin].s
+      // Reverse is only legal empty (job not yet picked up). The strategy
+      // already picked the vehicle — here we decide direction. When reverse
+      // is off, heading stays +1 and behavior is byte-identical to v1.
+      const fwdDist = this.fwd(best.pos, pickupS)
+      const revDist = this.L - fwdDist
+      best.heading = allowReverse && revDist < fwdDist ? -1 : 1
       best.job = this.pending.shift()!
       best.state = ST.TO_PICKUP
-      best.targetS = this.stations[best.job.origin].s
+      best.targetS = pickupS
       best.offTrack = false // parked vehicles re-enter the loop at the spur
     }
   }
@@ -229,11 +253,20 @@ export class Sim {
     // follow-the-leader gaps from a position snapshot (max move/step << minGap);
     // charging vehicles sit on the spur, off the guide path — they don't block
     const order = this.vehicles.filter((v) => !v.offTrack).sort((a, b) => a.pos - b.pos)
+    // Forward gap = distance to the next vehicle in the loop order. Reverse
+    // gap = distance to the PREVIOUS vehicle (the one trailing this one).
+    // A vehicle going reverse (heading -1) honors its reverse gap; everyone
+    // else honors the forward gap. With heading pinned to +1 (the v1
+    // default), revGap is never read and behavior is byte-identical.
     const gapOf = new Map<number, number>()
+    const revGapOf = new Map<number, number>()
     for (let i = 0; i < order.length; i++) {
       const ahead = order[(i + 1) % order.length]
-      const gap = order.length === 1 ? L : ((ahead.pos - order[i].pos + L) % L)
-      gapOf.set(order[i].id, gap)
+      const behind = order[(i - 1 + order.length) % order.length]
+      const fwdGap = order.length === 1 ? L : ((ahead.pos - order[i].pos + L) % L)
+      const revGap = order.length === 1 ? L : ((order[i].pos - behind.pos + L) % L)
+      gapOf.set(order[i].id, fwdGap)
+      revGapOf.set(order[i].id, revGap)
     }
 
     const record = this.t > WARMUP
@@ -303,11 +336,15 @@ export class Sim {
         if (P.parkIdle && v.state === ST.IDLE && v.targetS === null) v.targetS = this.chargeBayS
         const vmax = v.state === ST.IDLE ? P.speed * IDLE_SPEED : P.speed
         const desired = vmax * DT
-        const gap = gapOf.get(v.id) ?? L
+        // Reverse heading is only legal on the empty leg (TO_PICKUP from
+        // idle, or IDLE heading back to a parked station). Once loaded
+        // (TO_DROP / TO_CHARGE) we force forward — never back up with a load.
+        const mayReverse = v.heading === -1 && (v.state === ST.TO_PICKUP || v.state === ST.IDLE)
+        const gap = mayReverse ? (revGapOf.get(v.id) ?? L) : (gapOf.get(v.id) ?? L)
         let move = Math.min(desired, Math.max(0, gap - P.minGap))
         let arrived = false
         if (v.targetS !== null) {
-          const dist = this.fwd(v.pos, v.targetS)
+          const dist = mayReverse ? this.L - this.fwd(v.pos, v.targetS) : this.fwd(v.pos, v.targetS)
           // circulate policy, all bays occupied → don't stop: lap the loop, retry next pass
           const passThrough = v.state === ST.TO_CHARGE && this.charging.size >= P.chargeBays && !P.parkIdle
           if (dist <= move && !passThrough) {
@@ -319,7 +356,7 @@ export class Sim {
           bucket = 'blocked'
           this.lastBlockedIds.add(v.id)
         }
-        v.pos = (v.pos + move) % L
+        v.pos = mayReverse ? ((v.pos - move) % L + L) % L : (v.pos + move) % L
         v.soc = Math.max(0, v.soc - this.drainMove * DT)
         if (arrived) {
           if (v.state === ST.TO_PICKUP) {
@@ -345,6 +382,10 @@ export class Sim {
             v.offTrack = true
             v.pos = this.chargeBayS // park
           }
+          // A vehicle that arrived at a pickup reverts to forward heading
+          // for the loaded leg. After IDLE→park, heading doesn't matter
+          // (we'll only set it again at the next dispatch).
+          v.heading = 1
         }
         if (v.soc <= 0 && v.state !== ST.CHARGING) {
           // dead battery = fault; ops pull it off the path (it must not gridlock the loop)
