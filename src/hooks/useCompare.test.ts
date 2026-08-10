@@ -5,8 +5,12 @@ import { defaultParams, makeScenario } from '../lib/defaults.ts'
 
 describe('useCompare', () => {
   it('produces one result per scenario, matched by id', async () => {
-    const a = makeScenario('A', { ...defaultParams(), fleet: 4, seed: 1 })
-    const b = makeScenario('B', { ...defaultParams(), fleet: 8, seed: 2 })
+    // Disable reverse-direction pickup so this test continues to assert
+    // fleet-size sensitivity under the v1 dispatch model — with reverse on,
+    // an undersized fleet can claw back throughput via backtracking and the
+    // "more vehicles ≥ throughput" invariant no longer holds.
+    const a = makeScenario('A', { ...defaultParams(), fleet: 4, seed: 1, allowReversePickup: false })
+    const b = makeScenario('B', { ...defaultParams(), fleet: 8, seed: 2, allowReversePickup: false })
     const { result } = renderHook(() => useCompare())
 
     act(() => result.current.run([a, b]))
