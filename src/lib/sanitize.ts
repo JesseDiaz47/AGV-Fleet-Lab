@@ -80,6 +80,7 @@ export function sanitizeScenarioParams(raw: unknown): ScenarioParams {
     originWeights: sanitizeWeights(raw.originWeights, stations),
     destWeights: sanitizeWeights(raw.destWeights, stations),
     shiftProfile: sanitizeShiftProfile(raw.shiftProfile),
+    allowReversePickup: bool(raw.allowReversePickup, d.allowReversePickup),
   }
 }
 

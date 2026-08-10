@@ -78,6 +78,13 @@ export interface ScenarioParams {
    * a repeating 24h cycle. `null` = flat (matches v1 behavior exactly).
    */
   shiftProfile: ShiftBlock[] | null
+  /**
+   * Allow an empty (idle) vehicle to backtrack toward a pickup instead of
+   * lapping the loop forward. Disabled = current one-way behavior. Reverse
+   * travel is only legal empty — once a job is loaded, the vehicle always
+   * goes forward to the drop.
+   */
+  allowReversePickup: boolean
 }
 
 export interface Scenario {

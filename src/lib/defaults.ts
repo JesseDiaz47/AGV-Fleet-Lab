@@ -27,6 +27,7 @@ export function defaultParams(): ScenarioParams {
     originWeights: null,
     destWeights: null,
     shiftProfile: null,
+    allowReversePickup: true,
   }
 }
 
