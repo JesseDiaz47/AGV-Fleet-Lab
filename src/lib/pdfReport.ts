@@ -176,6 +176,7 @@ export function buildDesignReviewPdf(data: DesignReviewData): Blob {
       ['End-of-run backlog', fmtNum(validate.backlog)],
       ['Stranded (dead battery)', fmtNum(validate.stranded)],
       ['Avg state of charge', fmtPercent(validate.avgSoc)],
+      ['Reverse pickup share', `${fmtPercent(validate.reversePickupShare * 100)} (${validate.reversePickups} / ${validate.pickupsObserved})`],
       ['Meets demand', validate.met ? 'Yes' : 'No'],
     ])
     y = lastTableY(doc) + 22

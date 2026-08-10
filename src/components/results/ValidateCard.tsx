@@ -67,6 +67,12 @@ export function ValidateCard({ params, status, result, onRun }: ValidateCardProp
               <dt>Avg state of charge</dt>
               <dd>{fmtPercent(result.avgSoc)}</dd>
             </div>
+            <div className="stat-list__row">
+              <dt>Reverse pickup share</dt>
+              <dd>
+                {fmtPercent(result.reversePickupShare * 100)} ({result.reversePickups} / {result.pickupsObserved})
+              </dd>
+            </div>
           </dl>
           <div className="simview__bucketbar" aria-hidden="true">
             {BUCKETS.map((b) => (
