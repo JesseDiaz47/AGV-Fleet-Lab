@@ -114,6 +114,12 @@ export interface SimStats {
   met: boolean
   stranded: number
   avgSoc: number
+  /** Fraction of post-warmup pickups that went reverse (0 when reverse is off). */
+  reversePickupShare: number
+  /** Post-warmup count of pickups that chose reverse. */
+  reversePickups: number
+  /** Post-warmup count of all pickups (denominator for the share). */
+  pickupsObserved: number
 }
 
 export class Sim {
@@ -140,6 +146,10 @@ export class Sim {
   strandedCount: number
   /** Vehicle ids tallied as 'blocked' on the most recent step(). For rendering only — not read by stats(). */
   lastBlockedIds: Set<number>
+  /** Post-warmup count of pickups (TO_PICKUP → LOADING transitions). */
+  pickupsObserved: number
+  /** Of those, how many chose reverse (heading was set to -1 at dispatch). */
+  reversePickups: number
 
   constructor(P: SimParams, seed: number) {
     this.P = P
@@ -187,6 +197,8 @@ export class Sim {
     this.backlogStart = null
     this.strandedCount = 0
     this.lastBlockedIds = new Set()
+    this.pickupsObserved = 0
+    this.reversePickups = 0
   }
 
   fwd(from: number, to: number): number {
@@ -360,6 +372,12 @@ export class Sim {
         v.soc = Math.max(0, v.soc - this.drainMove * DT)
         if (arrived) {
           if (v.state === ST.TO_PICKUP) {
+            // Count the pickup (post-warmup only) and remember whether it
+            // went reverse, for the share KPI.
+            if (record) {
+              this.pickupsObserved++
+              if (mayReverse) this.reversePickups++
+            }
             v.state = ST.LOADING
             v.dwellLeft = triSample(this.rngSvc, P.loadS, P.spreadPct / 100)
             this.stations[v.job!.origin].waiting--
@@ -436,6 +454,9 @@ export class Sim {
       met,
       stranded: this.strandedCount,
       avgSoc: this.vehicles.reduce((a, v) => a + v.soc, 0) / this.vehicles.length,
+      reversePickupShare: this.pickupsObserved > 0 ? this.reversePickups / this.pickupsObserved : 0,
+      reversePickups: this.reversePickups,
+      pickupsObserved: this.pickupsObserved,
     }
   }
 
@@ -486,5 +507,8 @@ export function avgStats(list: SimStats[]): SimStats {
     met: list.every((s) => s.met),
     stranded: list.reduce((a, s) => a + s.stranded, 0),
     avgSoc: m((s) => s.avgSoc),
+    reversePickupShare: m((s) => s.reversePickupShare),
+    reversePickups: list.reduce((a, s) => a + s.reversePickups, 0),
+    pickupsObserved: list.reduce((a, s) => a + s.pickupsObserved, 0),
   }
 }

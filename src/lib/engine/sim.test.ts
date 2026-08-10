@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { REPS, SIM_HOURS, Sim, WARMUP, avgStats, batchRun, type SimParams } from './sim.ts'
 
 // Same hand-checked default scenario as analytic.test.ts, plus a starting fleet.
+// Reverse-direction empty pickup defaults OFF in the regression fixture so the
+// pinned tph/busy numbers stay byte-identical to the v1 baseline — the
+// separate reverse-pickup tests opt in explicitly.
 const base: SimParams = {
   demand: 40,
   loopLen: 400,
@@ -19,6 +22,7 @@ const base: SimParams = {
   chargeBays: 1,
   parkIdle: true,
   fleet: 5,
+  allowReversePickup: false,
 }
 
 describe('Sim — determinism', () => {
@@ -133,6 +137,40 @@ describe('Sim — shift profile wiring', () => {
     )
     expect(Number.isFinite(st.tph)).toBe(true)
     expect(st.stranded).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('Sim — reverse-direction empty pickup', () => {
+  it('regression: allowReversePickup=false reproduces the v1 pinned fleet-5 knee', () => {
+    // The reverse-pickup feature must not perturb the pinned numbers when
+    // disabled — that's the contract that lets the rest of the suite stay
+    // green after the feature lands.
+    const P = { ...base, fleet: 5, allowReversePickup: false }
+    const runs = []
+    for (let r = 0; r < REPS; r++) runs.push(batchRun(P, 42 + r * 7919, SIM_HOURS))
+    const st = avgStats(runs)
+    expect(st.met).toBe(true)
+    expect(st.tph).toBeCloseTo(41.6, 0)
+    expect(st.busy).toBeCloseTo(0.74, 1)
+    expect(st.reversePickupShare).toBe(0)
+  })
+
+  it('allowReversePickup=true actually fires reverse pickups on the default scenario', () => {
+    // The default layout has 6 stations on a 400m loop; with 5 vehicles
+    // and the given demand, at least some pickups should be shorter via
+    // reverse than via forward — the counter must reflect that.
+    const P = { ...base, fleet: 5, allowReversePickup: true }
+    const st = batchRun(P, 42, SIM_HOURS)
+    expect(st.reversePickups).toBeGreaterThan(0)
+    expect(st.pickupsObserved).toBeGreaterThan(0)
+  })
+
+  it('reversePickupShare is the fraction of observed pickups that went reverse', () => {
+    const P = { ...base, fleet: 5, allowReversePickup: true }
+    const st = batchRun(P, 42, SIM_HOURS)
+    expect(st.reversePickupShare).toBeGreaterThan(0)
+    expect(st.reversePickupShare).toBeLessThanOrEqual(1)
+    expect(st.reversePickupShare).toBeCloseTo(st.reversePickups / st.pickupsObserved, 6)
   })
 })
 
