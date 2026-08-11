@@ -20,7 +20,7 @@ export interface SweepPoint {
  * Fleet sizes to try: covers the analytic estimate plus headroom, capped at
  * 14 — and at what the guide path can physically hold.
  *
- * Sizes past `maxFeasibleFleet` are dropped rather than simulated and marked.
+ * Sizes past `maxFeasibleFleet` are dropped rather than simulated.
  * A row that reads "0.00/hr, blocked 100%" is indistinguishable from a
  * congestion result, and putting it in the chart, the table and the CSV
  * invites the reader to treat an impossible layout as a measured one. The

@@ -132,7 +132,7 @@ export interface SimStats {
   avgSoc: number
   /** Fraction of post-warmup pickups that went reverse (0 when reverse is off). */
   reversePickupShare: number
-  /** Post-warmup count of pickups that chose reverse. */
+  /** Post-warmup count of pickups completed while still travelling reverse. */
   reversePickups: number
   /** Post-warmup count of all pickups (denominator for the share). */
   pickupsObserved: number
@@ -164,7 +164,7 @@ export class Sim {
   lastBlockedIds: Set<number>
   /** Post-warmup count of pickups (TO_PICKUP → LOADING transitions). */
   pickupsObserved: number
-  /** Of those, how many chose reverse (heading was set to -1 at dispatch). */
+  /** Of those, how many arrived while still reversing (give-way trips finish forward and do not count). */
   reversePickups: number
 
   constructor(P: SimParams, seed: number) {

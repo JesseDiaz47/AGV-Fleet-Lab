@@ -1,11 +1,11 @@
 /**
- * Reverse-direction empty pickup: traffic invariants.
+ * Reverse-direction empty pickup: experimental give-way invariants.
  *
  * The guide-path model is a SINGLE ONE-WAY LOOP with follow-the-leader,
  * no-passing spacing. Letting an empty vehicle back up toward a pickup puts
- * it nose-to-nose with forward traffic, and the spacing model has no rule to
- * resolve that conflict. These tests pin the invariants the feature must
- * respect to stay inside the model it is built on:
+ * it nose-to-nose with forward traffic unless the experimental give-way rule
+ * intervenes. These tests pin the narrow invariants that rule must preserve;
+ * they are not proof of a general bidirectional traffic-control model:
  *
  *   - no head-on conflict (a reverse vehicle backing into a forward vehicle),
  *   - no permanent blocking (every jam must clear on its own),

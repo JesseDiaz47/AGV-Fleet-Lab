@@ -10,9 +10,9 @@ import { REPS, SIM_HOURS, avgStats, batchRun } from './engine/sim.ts'
 
 describe('defaultParams', () => {
   it('ships the supported one-way guide path (reverse pickup is experimental, off)', () => {
-    // Reverse-direction empty pickup puts a vehicle nose-to-nose with forward
-    // traffic on a one-way loop, which the spacing model cannot arbitrate.
-    // It is opt-in only — see sim.reverse.test.ts.
+    // Reverse-direction empty pickup creates opposing traffic outside the
+    // supported one-way contract. The experimental give-way rule can arbitrate
+    // that narrow maneuver, but it remains opt-in — see sim.reverse.test.ts.
     expect(defaultParams().allowReversePickup).toBe(false)
   })
 
