@@ -31,10 +31,30 @@ export function niceMax(x: number): number {
   return 10 * p
 }
 
-/** Smallest fleet that meets demand; falls back to best-throughput if none does. */
+/**
+ * Smallest fleet size that actually met demand, or null if none did.
+ *
+ * This is the only value safe to put in a recommendation: it is never a fleet
+ * size that fell short. Use `pickKnee` for chart/table highlighting, which
+ * needs *some* row highlighted even when nothing met demand.
+ */
+export function smallestMeetingFleet(results: SweepPoint[]): number | null {
+  return results.find((r) => r.met)?.n ?? null
+}
+
+/**
+ * Row to highlight in the sweep chart/table: the smallest fleet that meets
+ * demand, falling back to the best-throughput point when none does.
+ *
+ * The fallback is a DISPLAY affordance only — it marks "the best this range
+ * managed", not a fleet size that works. Never phrase it as advice ("raise
+ * the fleet to at least N"): when nothing met demand that reads as a
+ * recommendation to shrink the fleet to a size that also failed. Use
+ * `smallestMeetingFleet` for anything the reader will act on.
+ */
 export function pickKnee(results: SweepPoint[]): number | null {
-  const met = results.find((r) => r.met)
-  if (met) return met.n
+  const met = smallestMeetingFleet(results)
+  if (met !== null) return met
   if (results.length === 0) return null
   let best = results[0]
   for (const r of results) if (r.tph > best.tph) best = r
