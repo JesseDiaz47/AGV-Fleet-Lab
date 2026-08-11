@@ -239,6 +239,31 @@ export class Sim {
     return true
   }
 
+  /**
+   * True when `v`, currently off the guide path on the charge/park spur, can
+   * merge back onto the loop at its own position without infringing `minGap`.
+   *
+   * The spur is modelled as a siding hanging off one point of the loop, so
+   * re-entry is a merge into live traffic, not a teleport: both the vehicle
+   * that will be ahead and the one that will be behind must already be at
+   * least `minGap` away. A single check on the leader is not enough — the
+   * follower cannot brake retroactively for a vehicle that appeared inside
+   * its gap between two snapshots.
+   *
+   * Exactly `minGap` counts as clear: that is the same closest approach the
+   * follow-the-leader rule allows on the loop itself (`gap - minGap`), so the
+   * merge rule and the travel rule agree at the boundary. Vehicles already on
+   * the spur don't occupy the loop; stranded ones have been pulled off it.
+   */
+  reEntryClear(v: Vehicle): boolean {
+    for (const o of this.vehicles) {
+      if (o.id === v.id || o.offTrack || o.state === ST.STRANDED) continue
+      if (this.fwd(v.pos, o.pos) < this.P.minGap) return false // would land inside the leader's gap
+      if (this.fwd(o.pos, v.pos) < this.P.minGap) return false // would land inside a follower's gap
+    }
+    return true
+  }
+
   tally(bucket: StateBucketKey, record: boolean): void {
     this.liveState[bucket] += DT
     if (record) this.stateTime[bucket] += DT
@@ -257,19 +282,22 @@ export class Sim {
 
   dispatch(): void {
     const strategy = DISPATCH_STRATEGIES[this.P.dispatchRule ?? 'nearestVehicle']
-    // ctx.pending/vehicles are references to this.pending/this.vehicles, so
-    // mutations below (shift) are visible to the strategy on the next call.
-    const ctx: DispatchContext = {
-      vehicles: this.vehicles,
-      pending: this.pending,
-      stations: this.stations,
-      battery: this.P.battery,
-      thresholdPct: this.P.thresholdPct,
-      idleState: ST.IDLE,
-      fwd: (from, to) => this.fwd(from, to),
-    }
+    // ctx.pending is a reference to this.pending, so mutations below (shift)
+    // are visible to the strategy on the next call. ctx.vehicles is rebuilt
+    // per iteration instead: a vehicle parked on the spur is only a candidate
+    // while it can actually merge back into traffic, and dispatching one
+    // changes that answer for the next parked vehicle in the same step.
     const allowReverse = this.P.allowReversePickup === true
     while (this.pending.length) {
+      const ctx: DispatchContext = {
+        vehicles: this.vehicles.filter((v) => !v.offTrack || this.reEntryClear(v)),
+        pending: this.pending,
+        stations: this.stations,
+        battery: this.P.battery,
+        thresholdPct: this.P.thresholdPct,
+        idleState: ST.IDLE,
+        fwd: (from, to) => this.fwd(from, to),
+      }
       const assignment = strategy(ctx)
       if (!assignment) return
       const best = this.vehicles.find((v) => v.id === assignment.vehicleId)!
@@ -289,10 +317,30 @@ export class Sim {
     }
   }
 
+  /**
+   * Merges parked vehicles that belong on the loop rather than on the spur
+   * back into traffic, one at a time and only where `minGap` survives.
+   *
+   * Under the circulate policy (`parkIdle` off) the spur is only ever a
+   * charging stop, so a vehicle idling there is waiting for a slot in traffic.
+   * Under park-idle the spur IS home: those vehicles wait for dispatch instead
+   * (see `dispatch`), and a vehicle queued for a bay must not wander off.
+   *
+   * Called from `step()` before the position snapshot, so anything that merges
+   * here is visible to every follower's gap in the same step.
+   */
+  mergeFromSpur(): void {
+    if (this.P.parkIdle) return
+    for (const v of this.vehicles) {
+      if (v.offTrack && v.state === ST.IDLE && this.reEntryClear(v)) v.offTrack = false
+    }
+  }
+
   step(): void {
     this.t += DT
     this.spawnJobs()
     this.dispatch()
+    this.mergeFromSpur()
     this.lastBlockedIds.clear()
 
     const P = this.P
@@ -377,7 +425,12 @@ export class Sim {
           v.state = ST.IDLE
           v.targetS = null
           v.idleSince = this.t
-          v.offTrack = false // re-enter at the bay
+          // The bay is released immediately (a charged vehicle must never hold
+          // one hostage), but the vehicle stays on the spur: rejoining the
+          // guide path is `mergeFromSpur`'s job at the top of a step, so that
+          // followers see the merge in the same position snapshot they brake
+          // against. Until then it is an ordinary parked idle vehicle.
+          v.offTrack = true
         }
       } else if (MOVING.has(v.state)) {
         if (P.parkIdle && v.state === ST.IDLE && v.targetS === null) v.targetS = this.chargeBayS
