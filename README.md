@@ -38,6 +38,29 @@ npm run check         # typecheck + lint + test + build, in that order
 - Named, versioned scenarios with side-by-side comparison.
 - CSV export and a design-review PDF report.
 
+## Model boundary: the loop is one-way
+
+Every supported result assumes a **single one-way loop**. That assumption is
+what makes the model tractable: vehicles follow the leader, nobody passes, and
+because all traffic flows the same direction there are no head-on conflicts to
+arbitrate — the layout is deadlock-free by construction. The analytic first
+pass (Egbelu) assumes the same thing.
+
+**Reverse-direction empty pickup is therefore experimental and off by
+default.** Letting an empty vehicle back up to a nearer pickup is outside that
+model, so it is admitted only under a narrow give-way rule: a vehicle may
+reverse only into a stretch of loop it can see is clear, and it yields to
+forward traffic unconditionally, finishing the trip forward if anyone catches
+up (`REVERSE_CLEARANCE` in `src/lib/engine/sim.ts`). With the option on,
+expect a modest gain at small fleet sizes — where the loop is empty enough for
+the maneuver to be legal — converging on the one-way baseline as the fleet
+fills the loop. Turning it off reproduces the one-way baseline exactly, and
+that equivalence is a pinned test.
+
+Reverse travel that genuinely pays off needs real bidirectional traffic
+control — zone reservation, sidings, deadlock detection — which is a route-
+network phase, not a flag.
+
 ## References
 
 Standard AGV-systems engineering: Egbelu (1987) fleet-sizing estimate,
