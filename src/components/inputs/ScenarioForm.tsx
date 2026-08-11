@@ -96,7 +96,7 @@ export function ScenarioForm({ scenario, updateParams, renameActive }: ScenarioF
         <NumberField label="Min gap" suffix="m" value={p.minGap} min={GAP_MIN} max={GAP_MAX} onChange={(v) => updateParams({ minGap: v })} />
         <BoolField label="Park idle vehicles at charge bay" checked={p.parkIdle} onChange={(v) => updateParams({ parkIdle: v })} />
         <BoolField
-          label="Allow reverse-direction empty pickup"
+          label="Allow reverse-direction empty pickup (experimental — one-way loop)"
           checked={p.allowReversePickup}
           onChange={(v) => updateParams({ allowReversePickup: v })}
         />

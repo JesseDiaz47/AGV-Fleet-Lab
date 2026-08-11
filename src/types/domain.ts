@@ -79,10 +79,16 @@ export interface ScenarioParams {
    */
   shiftProfile: ShiftBlock[] | null
   /**
-   * Allow an empty (idle) vehicle to backtrack toward a pickup instead of
-   * lapping the loop forward. Disabled = current one-way behavior. Reverse
-   * travel is only legal empty — once a job is loaded, the vehicle always
-   * goes forward to the drop.
+   * EXPERIMENTAL, default off. Allow an empty (idle) vehicle to backtrack
+   * toward a pickup instead of lapping the loop forward.
+   *
+   * The supported guide path is a single ONE-WAY loop, so reverse travel is
+   * outside the model the analytic pass and the spacing rules are built on.
+   * It is admitted only under a narrow give-way rule — reverse only into a
+   * confirmed-clear segment, and yield to forward traffic unconditionally
+   * (see `REVERSE_CLEARANCE` in `lib/engine/sim.ts`). Reverse travel is only
+   * ever legal empty; once a job is loaded the vehicle always goes forward to
+   * the drop. Off reproduces the v1 one-way baseline exactly.
    */
   allowReversePickup: boolean
 }

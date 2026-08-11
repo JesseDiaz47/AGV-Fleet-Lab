@@ -30,6 +30,21 @@ export const WORKING = new Set<VehicleState>([ST.TO_PICKUP, ST.LOADING, ST.TO_DR
 // becomes a moving roadblock that drags every working vehicle to its pace.
 export const IDLE_SPEED = 1.0
 export const DWELL_DRAIN = 0.3 // battery drain while stopped, as a fraction of moving drain
+/**
+ * Clearance a reversing vehicle must hold behind itself, as a multiple of
+ * `minGap`.
+ *
+ * The guide path is one-way: there is no siding, no passing, and no signalling
+ * to arbitrate two vehicles that meet nose-to-nose. So reverse travel gets no
+ * right of way. Forward traffic keeps its normal `minGap`; the reversing
+ * vehicle holds double that and gives way (reverts to forward) the moment the
+ * clearance is lost. Two consequences make the model sound:
+ *   - the follower's `minGap` is never infringed, because the vehicle moving
+ *     against the flow stops closing the gap while a full gap still remains;
+ *   - no head-on standoff can persist, because giving way is unconditional —
+ *     the reversing vehicle always has the forward lap available to it.
+ */
+export const REVERSE_CLEARANCE = 2
 export const OPP_CHARGE_SOC = 60 // idle vehicles top up below this when a bay is free and no work waits
 export const DT = 0.1 // s
 export const WARMUP = 900 // s excluded from batch statistics
@@ -205,6 +220,25 @@ export class Sim {
     return (((to - from) % this.L) + this.L) % this.L
   }
 
+  /**
+   * True when the stretch of loop a vehicle would sweep while backing up
+   * `revDist` m is free of other on-track vehicles, with `REVERSE_CLEARANCE`
+   * gaps of margin.
+   *
+   * A vehicle may only commit to reverse into a segment it can see is empty —
+   * backing blind into oncoming traffic on a one-way path is not a maneuver
+   * the model can represent. Vehicles on the charge spur are off the guide
+   * path and don't count; stranded ones have been pulled off by ops.
+   */
+  reverseArcClear(v: Vehicle, revDist: number): boolean {
+    for (const o of this.vehicles) {
+      if (o.id === v.id || o.offTrack || o.state === ST.STRANDED) continue
+      // fwd(o → v) is exactly how far v must back up before it reaches o.
+      if (this.fwd(o.pos, v.pos) <= revDist + REVERSE_CLEARANCE * this.P.minGap) return false
+    }
+    return true
+  }
+
   tally(bucket: StateBucketKey, record: boolean): void {
     this.liveState[bucket] += DT
     if (record) this.stateTime[bucket] += DT
@@ -241,12 +275,13 @@ export class Sim {
       const best = this.vehicles.find((v) => v.id === assignment.vehicleId)!
       const job = this.pending[0]
       const pickupS = this.stations[job.origin].s
-      // Reverse is only legal empty (job not yet picked up). The strategy
-      // already picked the vehicle — here we decide direction. When reverse
-      // is off, heading stays +1 and behavior is byte-identical to v1.
+      // Reverse is only legal empty (job not yet picked up), shorter than
+      // lapping forward, AND into a segment confirmed clear of other traffic.
+      // When reverse is off, heading stays +1 and behavior is byte-identical
+      // to v1.
       const fwdDist = this.fwd(best.pos, pickupS)
       const revDist = this.L - fwdDist
-      best.heading = allowReverse && revDist < fwdDist ? -1 : 1
+      best.heading = allowReverse && revDist < fwdDist && this.reverseArcClear(best, revDist) ? -1 : 1
       best.job = this.pending.shift()!
       best.state = ST.TO_PICKUP
       best.targetS = pickupS
@@ -351,7 +386,15 @@ export class Sim {
         // Reverse heading is only legal on the empty leg (TO_PICKUP from
         // idle, or IDLE heading back to a parked station). Once loaded
         // (TO_DROP / TO_CHARGE) we force forward — never back up with a load.
-        const mayReverse = v.heading === -1 && (v.state === ST.TO_PICKUP || v.state === ST.IDLE)
+        let mayReverse = v.heading === -1 && (v.state === ST.TO_PICKUP || v.state === ST.IDLE)
+        if (mayReverse && (revGapOf.get(v.id) ?? L) < REVERSE_CLEARANCE * P.minGap) {
+          // Give way: forward traffic has caught up to within the reverse
+          // clearance, so abandon the shortcut and finish the trip forward.
+          // Unconditional — a vehicle moving against the flow never makes
+          // oncoming traffic wait, which is what keeps the loop deadlock-free.
+          v.heading = 1
+          mayReverse = false
+        }
         const gap = mayReverse ? (revGapOf.get(v.id) ?? L) : (gapOf.get(v.id) ?? L)
         let move = Math.min(desired, Math.max(0, gap - P.minGap))
         let arrived = false
