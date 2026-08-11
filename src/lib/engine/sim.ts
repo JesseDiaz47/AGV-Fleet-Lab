@@ -9,6 +9,7 @@
  */
 import { mulberry32, triSample, percentile } from '../prng.ts'
 import { sampleOrigin, sampleDestination, nextArrivalTime, type ShiftBlock } from './demand.ts'
+import { fleetFeasibility } from './feasibility.ts'
 import { DISPATCH_STRATEGIES, type DispatchContext, type DispatchRuleKey } from './dispatch.ts'
 
 export const ST = {
@@ -167,6 +168,13 @@ export class Sim {
   reversePickups: number
 
   constructor(P: SimParams, seed: number) {
+    // Refuse geometry the guide path cannot hold. A fleet whose combined
+    // minGap exceeds the loop starts with its vehicles already inside each
+    // other, and stepping it produces 0 jobs/hr at a blocked share of 1.0 —
+    // a number that reads as congestion data rather than as an impossible
+    // layout. Better to fail loudly than to publish it.
+    const fit = fleetFeasibility(P)
+    if (!fit.feasible) throw new RangeError(`Infeasible guide-path geometry: ${fit.reason}`)
     this.P = P
     // dedicated streams: fleet-size changes must never perturb the arrival
     // pattern, or fleet comparisons drown in arrival noise (CRN discipline)

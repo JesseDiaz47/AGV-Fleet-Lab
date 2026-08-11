@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DT, Sim, type StateTime } from '../lib/engine/sim.ts'
+import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toSimParams } from '../lib/simParams.ts'
 import type { ScenarioParams } from '../types/domain.ts'
 
@@ -22,7 +23,31 @@ export interface LiveTiles {
   completed: number
 }
 
-function computeTiles(sim: Sim): LiveTiles {
+/**
+ * Tiles for "there is no sim" — an infeasible fleet. `liveTph` is NaN rather
+ * than 0 on purpose: `format.ts` renders a non-finite as an em-dash, so an
+ * unknown throughput never reads as a measured zero. (A live `Sim` returns
+ * NaN here too for its first 60 s, for the same reason.)
+ */
+const EMPTY_TILES: LiveTiles = {
+  simTime: 0,
+  liveTph: NaN,
+  share: { loaded: 0, empty: 0, handling: 0, blocked: 0, charging: 0, idle: 0 },
+  fleet: 0,
+  avgSoc: 0,
+  backlog: 0,
+  stranded: 0,
+  completed: 0,
+}
+
+/** Builds a Sim, or null when the scenario's fleet cannot fit its loop (the engine refuses those). */
+function buildSim(params: ScenarioParams): Sim | null {
+  if (!fleetFeasibility(params).feasible) return null
+  return new Sim(toSimParams(params), params.seed)
+}
+
+function computeTiles(sim: Sim | null): LiveTiles {
+  if (!sim) return EMPTY_TILES
   const total = (Object.values(sim.liveState) as number[]).reduce((a, b) => a + b, 0) || 1e-9
   const share = {} as StateTime
   for (const k of Object.keys(sim.liveState) as (keyof StateTime)[]) share[k] = sim.liveState[k] / total
@@ -42,7 +67,7 @@ function computeTiles(sim: Sim): LiveTiles {
 const BASE_RATE = 20
 
 export function useLiveSim(scenarioId: string, params: ScenarioParams) {
-  const simRef = useRef<Sim>(new Sim(toSimParams(params), params.seed))
+  const simRef = useRef<Sim | null>(buildSim(params))
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [frame, setFrame] = useState(0)
@@ -51,7 +76,7 @@ export function useLiveSim(scenarioId: string, params: ScenarioParams) {
   paramsRef.current = params
 
   const restart = useCallback((next: ScenarioParams = paramsRef.current) => {
-    simRef.current = new Sim(toSimParams(next), next.seed)
+    simRef.current = buildSim(next)
     setTiles(computeTiles(simRef.current))
     setFrame((f) => f + 1)
   }, [])
@@ -69,10 +94,12 @@ export function useLiveSim(scenarioId: string, params: ScenarioParams) {
     let raf: number
     let last = performance.now()
     const loop = (now: number) => {
+      const sim = simRef.current
+      if (!sim) return
       const dtReal = Math.min(0.25, Math.max(0, (now - last) / 1000))
       last = now
       const steps = Math.round((dtReal * BASE_RATE * speed) / DT)
-      for (let i = 0; i < steps; i++) simRef.current.step()
+      for (let i = 0; i < steps; i++) sim.step()
       setTiles(computeTiles(simRef.current))
       setFrame((f) => f + 1)
       raf = requestAnimationFrame(loop)

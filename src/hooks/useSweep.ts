@@ -24,12 +24,18 @@ export function useSweep() {
 
   const run = useCallback((params: ScenarioParams) => {
     const token = ++tokenRef.current
-    const sizes = sweepSizes(analyze(toAnalyticParams(params)))
+    // `params` carries loopLen/minGap, so infeasible fleet sizes are dropped
+    // here rather than simulated — the engine would refuse them anyway.
+    const sizes = sweepSizes(analyze(toAnalyticParams(params)), params)
     setStatus('running')
     setResults([])
     setProgress(0)
     const simParams = toSimParams(params)
     const points: SweepPoint[] = []
+    if (sizes.length === 0) {
+      setStatus('done')
+      return
+    }
     let i = 0
     const step = () => {
       if (token !== tokenRef.current) return

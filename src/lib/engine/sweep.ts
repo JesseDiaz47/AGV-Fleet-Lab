@@ -4,6 +4,7 @@
  * SweepChart.tsx renders these numbers as real JSX.
  */
 import type { AnalyticResult } from './analytic.ts'
+import { maxFeasibleFleet, type FleetGeometry } from './feasibility.ts'
 
 export interface SweepPoint {
   n: number
@@ -15,9 +16,18 @@ export interface SweepPoint {
   met: boolean
 }
 
-/** Fleet sizes to try: covers the analytic estimate plus headroom, capped at 14. */
-export function sweepSizes(a: Pick<AnalyticResult, 'nReq' | 'nRaw' | 'derate'>): number[] {
-  const hi = Math.min(14, Math.max(a.nReq + 3, Math.ceil(a.nRaw / a.derate) + 3, 8))
+/**
+ * Fleet sizes to try: covers the analytic estimate plus headroom, capped at
+ * 14 — and at what the guide path can physically hold.
+ *
+ * Sizes past `maxFeasibleFleet` are dropped rather than simulated and marked.
+ * A row that reads "0.00/hr, blocked 100%" is indistinguishable from a
+ * congestion result, and putting it in the chart, the table and the CSV
+ * invites the reader to treat an impossible layout as a measured one. The
+ * scenario-level feasibility notice explains the missing rows.
+ */
+export function sweepSizes(a: Pick<AnalyticResult, 'nReq' | 'nRaw' | 'derate'>, geom: Omit<FleetGeometry, 'fleet'>): number[] {
+  const hi = Math.min(14, Math.max(a.nReq + 3, Math.ceil(a.nRaw / a.derate) + 3, 8), maxFeasibleFleet(geom.loopLen, geom.minGap))
   const sizes: number[] = []
   for (let n = 1; n <= hi; n++) sizes.push(n)
   return sizes

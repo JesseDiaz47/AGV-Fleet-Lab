@@ -4,6 +4,7 @@ import { draw } from '../../lib/engine/render.ts'
 import { fmtNum, fmtPercent, unit } from '../../lib/format.ts'
 import { BUCKETS } from '../../lib/engine/sim.ts'
 import { toSimParams } from '../../lib/simParams.ts'
+import { FeasibilityNotice } from '../ui/FeasibilityNotice.tsx'
 import type { Scenario } from '../../types/domain.ts'
 
 const fmtTph = unit('/hr', 1)
@@ -22,17 +23,28 @@ export function SimView({ scenario }: SimViewProps) {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !sim) return
     draw(canvas, sim, sim.lastBlockedIds)
   }, [sim, frame])
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !sim) return
     const ro = new ResizeObserver(() => draw(canvas, sim, sim.lastBlockedIds))
     ro.observe(canvas)
     return () => ro.disconnect()
   }, [sim])
+
+  // Nothing to watch: the fleet cannot be placed on the loop at all.
+  if (!sim) {
+    return (
+      <section className="card simview">
+        <div className="card-title">Live track view</div>
+        <FeasibilityNotice params={scenario.params} />
+        <p className="empty-hint">No run to show until the fleet fits the guide path.</p>
+      </section>
+    )
+  }
 
   const paramsDirty = JSON.stringify(sim.P) !== JSON.stringify(toSimParams(scenario.params))
 
