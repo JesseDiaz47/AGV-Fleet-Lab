@@ -93,6 +93,56 @@ describe('buildVerdictLines', () => {
     expect(lines.some((l) => /to at least 7\b/.test(l))).toBe(false)
   })
 
+  describe('when the chosen fleet is larger than the successful region', () => {
+    // Fleets 5-7 meet demand; past 7 the loop rolls over and 8/9 fall short.
+    // Telling the reader to "raise 8 to at least 5" is a contradiction: 5 is
+    // smaller than what they already have. The failure here is over-fleeting.
+    const rolledOver = [
+      point(4, 30, false),
+      point(5, 41, true),
+      point(6, 42, true),
+      point(7, 41.5, true),
+      point(8, 30, false),
+      point(9, 22, false),
+    ]
+
+    it('never phrases a smaller successful fleet as "raising" the chosen one', () => {
+      const joined = buildVerdictLines(6, 8, rolledOver).join('\n')
+      expect(joined).not.toMatch(/raising it to at least/i)
+      expect(joined).not.toMatch(/to at least 5\b/)
+    })
+
+    it('names over-fleeting/congestion as the cause in the chosen-fleet line itself', () => {
+      // Not just in the separate rollover line — the line that reports the
+      // shortfall has to explain it, or the reader is left with a bare
+      // failure and a smaller number.
+      const chosenLine = buildVerdictLines(6, 8, rolledOver).find((l) => l.includes('chosen fleet size (8)')) ?? ''
+      expect(chosenLine).toMatch(/over-fleet|congestion/i)
+    })
+
+    it('still states the smallest fleet that did meet demand', () => {
+      const lines = buildVerdictLines(6, 8, rolledOver)
+      expect(lines.some((l) => /chosen fleet size \(8\)/.test(l) && /does NOT meet demand/.test(l))).toBe(true)
+      expect(lines.some((l) => /\b5 vehicles\b/.test(l))).toBe(true)
+    })
+
+    it('applies the same reading further past the rollover', () => {
+      const joined = buildVerdictLines(6, 9, rolledOver).join('\n')
+      expect(joined).not.toMatch(/raising it to at least/i)
+      expect(joined).toMatch(/over-fleet|congestion/i)
+    })
+
+    it('still tells a genuinely under-fleeted scenario to raise the fleet', () => {
+      const joined = buildVerdictLines(6, 4, rolledOver).join('\n')
+      expect(joined).toMatch(/consider raising it to at least 5/)
+    })
+
+    it('still says a successful chosen fleet holds up', () => {
+      const joined = buildVerdictLines(6, 6, rolledOver).join('\n')
+      expect(joined).toMatch(/holds up in simulation/)
+    })
+  })
+
   it('flags rollover when throughput drops as fleet size increases', () => {
     const results = [point(5, 40, true), point(6, 39, true), point(7, 38, true)]
     const lines = buildVerdictLines(5, 5, results)

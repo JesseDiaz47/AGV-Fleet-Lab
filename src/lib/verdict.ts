@@ -36,8 +36,17 @@ export function buildVerdictLines(analyticNReq: number, chosenFleet: number, res
   if (chosenPoint) {
     if (chosenPoint.met) {
       lines.push(`The scenario's chosen fleet size (${chosenFleet}) holds up in simulation.`)
-    } else if (knee !== null) {
+    } else if (knee !== null && chosenFleet < knee) {
       lines.push(`The scenario's chosen fleet size (${chosenFleet}) does NOT meet demand in simulation — consider raising it to at least ${knee}.`)
+    } else if (knee !== null) {
+      // The chosen fleet is bigger than a fleet that DID meet demand, so it is
+      // not short of vehicles — it is over-fleeted, and the extra vehicles are
+      // congesting the loop. "Raise it to at least <smaller number>" would be
+      // a contradiction. State what the sweep showed and let the reader draw
+      // the engineering conclusion.
+      lines.push(
+        `The scenario's chosen fleet size (${chosenFleet}) does NOT meet demand in simulation, but ${knee} vehicles did — this is over-fleeting, not a shortage: past a point the extra vehicles congest the single loop instead of adding capacity.`,
+      )
     } else {
       // Nothing met demand, so there is no fleet size to recommend. Adding
       // vehicles is not the answer — on a single loop it eventually makes
