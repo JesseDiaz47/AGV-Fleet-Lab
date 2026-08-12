@@ -74,6 +74,7 @@ export function useLiveSim(scenarioId: string, params: ScenarioParams) {
   const [tiles, setTiles] = useState<LiveTiles>(() => computeTiles(simRef.current))
   const paramsRef = useRef(params)
   paramsRef.current = params
+  const feasible = fleetFeasibility(params).feasible
 
   const restart = useCallback((next: ScenarioParams = paramsRef.current) => {
     simRef.current = buildSim(next)
@@ -88,6 +89,19 @@ export function useLiveSim(scenarioId: string, params: ScenarioParams) {
     setRunning(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioId])
+
+  // Crossing the feasibility boundary auto-restarts so the live view tracks
+  // geometry changes in either direction without making the user click
+  // Restart themselves. Without this, fixing an over-tight loop leaves the
+  // previous (null) sim in place until manual restart; breaking a previously
+  // feasible loop leaves the canvas showing the last good frame while the
+  // rAF loop silently bails — both are inconsistent with the
+  // feasibility-notice UX in the rest of the form.
+  useEffect(() => {
+    restart(paramsRef.current)
+    setRunning(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feasible])
 
   useEffect(() => {
     if (!running) return

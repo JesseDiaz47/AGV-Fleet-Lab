@@ -47,4 +47,48 @@ describe('useLiveSim', () => {
     expect(() => act(() => result.current.restart(impossible))).not.toThrow()
     expect(result.current.sim).toBeNull()
   })
+
+  describe('auto-restart on the feasibility boundary', () => {
+    it('rebuilds a sim automatically when geometry flips infeasible → feasible', () => {
+      // Start infeasible — hook holds a null sim.
+      const { result, rerender } = renderHook(({ id, p }) => useLiveSim(id, p), {
+        initialProps: { id: 'auto', p: impossible },
+      })
+      expect(result.current.sim).toBeNull()
+      // The user fixes the geometry. Without auto-restart they would have to
+      // click Restart to see anything; with it, the hook rebuilds itself.
+      rerender({ id: 'auto', p: defaultParams() })
+      expect(result.current.sim).not.toBeNull()
+      expect(result.current.tiles.fleet).toBe(defaultParams().fleet)
+    })
+
+    it('nulls the sim automatically when geometry flips feasible → infeasible', () => {
+      // Start feasible. The user has been watching a live run.
+      const { result, rerender } = renderHook(({ id, p }) => useLiveSim(id, p), {
+        initialProps: { id: 'auto', p: defaultParams() },
+      })
+      expect(result.current.sim).not.toBeNull()
+      // The user tightens the geometry past feasibility. Auto-restart replaces
+      // the running sim with null so the feasibility card appears immediately,
+      // instead of the canvas freezing on the last good frame.
+      rerender({ id: 'auto', p: impossible })
+      expect(result.current.sim).toBeNull()
+      expect(result.current.tiles.fleet).toBe(0)
+    })
+
+    it('does not auto-restart on params edits that stay within feasibility', () => {
+      // Same scenarioId, feasible throughout — no restart should fire, so the
+      // user can keep watching a running sim while they tweak the form.
+      const { result, rerender } = renderHook(({ id, p }) => useLiveSim(id, p), {
+        initialProps: { id: 'auto', p: defaultParams() },
+      })
+      const before = result.current.sim
+      expect(before).not.toBeNull()
+      // Same feasibility, different demand: the existing explicit-restart
+      // contract says edits do not yank the live view, and that contract
+      // holds here — the same Sim instance is still in place.
+      rerender({ id: 'auto', p: { ...defaultParams(), demand: 50 } })
+      expect(result.current.sim).toBe(before)
+    })
+  })
 })
