@@ -1,7 +1,6 @@
 /* Design tokens — dark control-room palette, ported verbatim from the v1
-   single-file tool (post-apps/agv-fleet-lab). Keep this file the single
-   source of truth for color; components reference the custom properties,
-   never raw hex values. */
+   single-file tool. Keep this file the single source of truth for color;
+   components reference the custom properties, never raw hex values. */
 :root {
   --page: #0d0d0d;
   --surface: #1a1a19;

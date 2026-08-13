@@ -12,9 +12,9 @@ full DES study (Plant Simulation / FlexSim / AnyLogic) or vendor sign-off. All
 default numbers are fictional examples.
 
 This is the **v2 rebuild**: Vite + React + TypeScript, named scenarios,
-scenario comparison, and CSV/PDF export. The original single-file, zero-setup
-version lives at `post-apps/agv-fleet-lab` and still works standalone — it's
-kept as the offline handout artifact while this version grows.
+scenario comparison, and CSV/PDF export. It grew out of an earlier
+single-file, zero-setup version of the same tool, which is kept privately as
+an offline handout artifact.
 
 ## Development
 
