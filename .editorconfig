@@ -1,0 +1,19 @@
+# Conventions the codebase already follows — written down so an editor keeps
+# them without anyone having to notice. See docs/ARCHITECTURE.md.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# Markdown gives meaning to trailing spaces (hard line break), so leave them.
+trim_trailing_whitespace = false
+
+[*.{png,gif,mp4,ico}]
+insert_final_newline = false
+trim_trailing_whitespace = false
