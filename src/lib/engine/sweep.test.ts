@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findRollover, niceMax, pickKnee, sweepSizes, type SweepPoint } from './sweep.ts'
+import { buildSweepScales, findRollover, niceMax, pickKnee, sweepSizes, type SweepPoint } from './sweep.ts'
 
 describe('niceMax', () => {
   it('rounds up to a nice step', () => {
@@ -64,5 +64,30 @@ describe('findRollover', () => {
   it('returns null when throughput never drops', () => {
     const results = [pt(1, 10, false), pt(2, 20, true), pt(3, 25, true)]
     expect(findRollover(results)).toBeNull()
+  })
+})
+
+describe('buildSweepScales', () => {
+  // SweepChart plots the blocked panel as yBlocked(r.blocked * 100), i.e. in
+  // percent. The scale has to be built in the same unit or the line leaves the
+  // panel entirely — it is drawn, so a "did the path render" check still passes.
+  const results: SweepPoint[] = [
+    { n: 1, tph: 11.1, offered: 40, busy: 0.922, blocked: 0.0, p95: 19826, met: false },
+    { n: 3, tph: 31.2, offered: 40, busy: 0.898, blocked: 0.014, p95: 6161, met: false },
+    { n: 5, tph: 39.1, offered: 40, busy: 0.69, blocked: 0.022, p95: 615, met: true },
+  ]
+
+  it('keeps every plotted blocked point inside the blocked panel', () => {
+    const s = buildSweepScales(results, 40)
+    for (const r of results) {
+      const y = s.yBlocked(r.blocked * 100)
+      expect(y).toBeLessThanOrEqual(s.blockedBottom)
+      expect(y).toBeGreaterThanOrEqual(s.blockedTop)
+    }
+  })
+
+  it('labels the blocked axis in percent, not as a rounded-to-zero fraction', () => {
+    const s = buildSweepScales(results, 40)
+    expect(s.blockedMax).toBeGreaterThanOrEqual(2.2)
   })
 })

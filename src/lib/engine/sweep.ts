@@ -114,7 +114,11 @@ export function buildSweepScales(results: SweepPoint[], demand: number): SweepSc
   const throughputMax = niceMax(Math.max(demand, ...results.map((r) => r.tph), 1) * 1.15)
   const yThroughput = (v: number) => throughputBottom - (v / throughputMax) * (throughputBottom - throughputTop)
 
-  const blockedMax = niceMax(Math.max(0.05, ...results.map((r) => r.blocked)) * 1.15)
+  // `blocked` is a fraction, but the chart plots it as a percent — the scale
+  // has to be built in the unit it will be called with, or the line lands two
+  // orders of magnitude off the panel. The 0.05 floor keeps a near-zero series
+  // from filling the panel with noise; it is a 5% axis after conversion.
+  const blockedMax = niceMax(Math.max(0.05, ...results.map((r) => r.blocked)) * 100 * 1.15)
   const yBlocked = (v: number) => blockedBottom - (v / blockedMax) * (blockedBottom - blockedTop)
 
   return {
