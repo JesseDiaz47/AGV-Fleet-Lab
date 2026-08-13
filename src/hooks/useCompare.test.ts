@@ -19,10 +19,16 @@ describe('useCompare', () => {
     expect(result.current.results.map((r) => r.scenarioId).sort()).toEqual([a.id, b.id].sort())
     const resultA = result.current.results.find((r) => r.scenarioId === a.id)!
     const resultB = result.current.results.find((r) => r.scenarioId === b.id)!
+    // Both fleets fit the default 400 m loop at a 3 m gap, so both must have
+    // actually simulated — `simulated: null` is reserved for geometry the
+    // engine refuses (see engine/feasibility.ts).
+    const simA = resultA.simulated
+    const simB = resultB.simulated
+    if (!simA || !simB) throw new Error('both scenarios fit their loop, so both should have simulated')
     // More vehicles should never simulate lower throughput than fewer, for
     // the same demand — a basic sanity check that each result used its own
     // scenario's fleet size rather than a shared/default one.
-    expect(resultB.simulated.tph).toBeGreaterThanOrEqual(resultA.simulated.tph)
+    expect(simB.tph).toBeGreaterThanOrEqual(simA.tph)
   })
 
   it('reset invalidates an in-flight run', async () => {

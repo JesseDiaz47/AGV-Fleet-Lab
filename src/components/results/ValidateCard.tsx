@@ -1,6 +1,8 @@
 import { BUCKETS, type SimStats } from '../../lib/engine/sim.ts'
 import type { ValidateStatus } from '../../hooks/useValidate.ts'
 import { fmtNum, fmtPercent, unit } from '../../lib/format.ts'
+import { fleetFeasibility } from '../../lib/engine/feasibility.ts'
+import { FeasibilityNotice } from '../ui/FeasibilityNotice.tsx'
 import type { ScenarioParams } from '../../types/domain.ts'
 
 const fmtTph = unit('/hr', 2)
@@ -15,19 +17,26 @@ interface ValidateCardProps {
 
 /** Runs the seeded discrete-event simulation at the scenario's chosen fleet size and reports whether it holds up. */
 export function ValidateCard({ params, status, result, onRun }: ValidateCardProps) {
+  const feasible = fleetFeasibility(params).feasible
   return (
     <section className="card">
       <div className="card-title-row">
         <div className="card-title">Simulation validation</div>
-        <button type="button" className="btn btn-sm btn-primary" onClick={onRun} disabled={status === 'running'}>
+        <button
+          type="button"
+          className="btn btn-sm btn-primary"
+          onClick={onRun}
+          disabled={status === 'running' || !feasible}
+        >
           {status === 'running' ? 'Running…' : 'Run validation'}
         </button>
       </div>
+      <FeasibilityNotice params={params} />
       <p className="card-hint">
         Runs {params.fleet} vehicles for an 8h batch (2 seeded reps, {params.seed}/{params.seed + 1}) and
         checks whether throughput and backlog hold at that fleet size.
       </p>
-      {status === 'idle' && <p className="empty-hint">Not run yet for this scenario.</p>}
+      {status === 'idle' && feasible && <p className="empty-hint">Not run yet for this scenario.</p>}
       {status === 'running' && <p className="empty-hint">Simulating…</p>}
       {status === 'done' && result && (
         <>

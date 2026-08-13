@@ -11,6 +11,7 @@ import { SweepSection } from './components/results/SweepSection.tsx'
 import { CompareView } from './components/compare/CompareView.tsx'
 import { ExportPanel } from './components/export/ExportPanel.tsx'
 import { analyze } from './lib/engine/analytic.ts'
+import { fleetFeasibility } from './lib/engine/feasibility.ts'
 import { toAnalyticParams } from './lib/simParams.ts'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
     importJson,
   } = useScenarios()
   const analytic = useMemo(() => analyze(toAnalyticParams(activeScenario.params)), [activeScenario.params])
+  const feasible = fleetFeasibility(activeScenario.params).feasible
 
   const validate = useValidate()
   const sweep = useSweep()
@@ -36,11 +38,16 @@ function App() {
   // A different scenario invalidates the last validation/sweep results —
   // lifted here (rather than inside each card) so the combined PDF export
   // can see both at once.
+  //
+  // Editing the geometry across the feasibility boundary invalidates them
+  // too. Without this, KPIs measured while the fleet still fit would keep
+  // showing "meets demand" underneath the notice saying the fleet no longer
+  // fits — and would follow that contradiction into the PDF.
   useEffect(() => {
     validate.reset()
     sweep.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeScenario.id])
+  }, [activeScenario.id, feasible])
 
   return (
     <div className="wrap">

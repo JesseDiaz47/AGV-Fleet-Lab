@@ -6,7 +6,11 @@ import type { SweepPoint } from '../../lib/engine/sweep.ts'
 import { sweepToCsv } from '../../lib/csvExport.ts'
 import { downloadCsv, timestampSlug } from '../../lib/download.ts'
 import { fmtPercent } from '../../lib/format.ts'
-import type { ScenarioParams } from '../../types/domain.ts'
+import { fleetFeasibility } from '../../lib/engine/feasibility.ts'
+import { FeasibilityNotice } from '../ui/FeasibilityNotice.tsx'
+import { PARAM_LIMITS, type ScenarioParams } from '../../types/domain.ts'
+
+const [, FLEET_MAX] = PARAM_LIMITS.fleet
 
 interface SweepSectionProps {
   params: ScenarioParams
@@ -20,6 +24,8 @@ interface SweepSectionProps {
 
 /** Composes the sweep chart/table/verdict views around a sweep run owned by the caller (App), so its results can also feed the combined PDF export. */
 export function SweepSection({ params, scenarioName, analyticNReq, status, results, progress, onRun }: SweepSectionProps) {
+  const fit = fleetFeasibility(params)
+
   function exportCsv() {
     downloadCsv(`agv-fleet-lab-sweep-${scenarioName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${timestampSlug()}.csv`, sweepToCsv(results))
   }
@@ -40,10 +46,21 @@ export function SweepSection({ params, scenarioName, analyticNReq, status, resul
             </button>
           </div>
         </div>
+        <FeasibilityNotice params={params} />
         <p className="card-hint">
           Simulates every fleet size from 1 up through headroom above the analytic estimate, 2 reps each.
+          {fit.maxFleet < FLEET_MAX && (
+            <>
+              {' '}
+              At a {params.minGap} m gap this {params.loopLen} m loop holds at most {fit.maxFleet}{' '}
+              {fit.maxFleet === 1 ? 'vehicle' : 'vehicles'}, so larger fleets are never simulated.
+            </>
+          )}
         </p>
         {status === 'idle' && <p className="empty-hint">Not run yet for this scenario.</p>}
+        {status === 'done' && results.length === 0 && (
+          <p className="empty-hint">No fleet size fits this guide path, so there was nothing to sweep.</p>
+        )}
         {results.length > 0 && <SweepChart results={results} demand={params.demand} />}
         {results.length > 0 && <SweepTable results={results} />}
       </section>

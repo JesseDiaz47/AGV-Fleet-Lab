@@ -30,7 +30,7 @@ describe('buildDesignReviewPdf', () => {
     const analytic = analyze(toAnalyticParams(scenario.params))
     const simParams = toSimParams(scenario.params)
     const validate = batchRun(simParams, scenario.params.seed, SIM_HOURS)
-    const sweep: SweepPoint[] = sweepSizes(analytic)
+    const sweep: SweepPoint[] = sweepSizes(analytic, scenario.params)
       .slice(0, 3)
       .map((n) => {
         const s = batchRun({ ...simParams, fleet: n }, scenario.params.seed, SIM_HOURS)

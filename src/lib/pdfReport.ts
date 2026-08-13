@@ -8,6 +8,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { pickKnee, type SweepPoint } from './engine/sweep.ts'
+import { fleetFeasibility } from './engine/feasibility.ts'
 import type { AnalyticResult } from './engine/analytic.ts'
 import type { SimStats } from './engine/sim.ts'
 import type { Scenario } from '../types/domain.ts'
@@ -123,6 +124,7 @@ function drawFooters(doc: jsPDF): void {
 export function buildDesignReviewPdf(data: DesignReviewData): Blob {
   const { scenario, analytic, validate, sweep, verdictLines } = data
   const p = scenario.params
+  const fit = fleetFeasibility(p)
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter', compress: true })
 
   drawHeader(doc, scenario)
@@ -150,6 +152,15 @@ export function buildDesignReviewPdf(data: DesignReviewData): Blob {
       : []),
     ['Availability / max utilization', `${fmtPercent(p.availabilityPct)} / ${fmtPercent(p.maxUtilPct)}`],
     ['Fleet size (chosen)', fmtNum(p.fleet)],
+    // A reviewer reading this offline has no feasibility notice to look at, so
+    // the geometry verdict has to travel with the inputs. Vehicles are points
+    // here: the min gap is the whole clearance each one claims.
+    [
+      'Fleet fits the guide path',
+      fit.feasible
+        ? 'Yes'
+        : `NO — this loop holds at most ${fmtNum(fit.maxFleet)} at a ${fmtNum(p.minGap)} m gap; the chosen fleet was not simulated`,
+    ],
     ['Seed', fmtNum(p.seed)],
   ])
   y = lastTableY(doc) + 22

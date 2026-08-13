@@ -1,10 +1,24 @@
 import { useEffect, useMemo } from 'react'
 import { useCompare, type CompareResult } from '../../hooks/useCompare.ts'
-import { fmtNum, fmtPercent, unit } from '../../lib/format.ts'
+import { DASH, fmtNum, fmtPercent, unit } from '../../lib/format.ts'
+import { fleetFeasibility } from '../../lib/engine/feasibility.ts'
+import type { SimStats } from '../../lib/engine/sim.ts'
 import type { Scenario } from '../../types/domain.ts'
 
 const fmtTph = unit('/hr', 1)
 const fmtSec = unit('s', 0)
+
+/**
+ * One simulated cell. The two empty cases are different and must not look the
+ * same: no result yet is a dash, while `simulated === null` means the fleet
+ * cannot fit its loop, so there is no run to report and never will be until
+ * the geometry changes.
+ */
+function simCell(r: CompareResult | undefined, render: (s: SimStats) => string): string {
+  if (!r) return DASH
+  if (!r.simulated) return 'Not simulated'
+  return render(r.simulated)
+}
 
 interface CompareViewProps {
   scenarios: Scenario[]
@@ -37,12 +51,13 @@ export function CompareView({ scenarios, compareIds }: CompareViewProps) {
   const rows: { label: string; render: (sc: Scenario, r: CompareResult | undefined) => string }[] = [
     { label: 'Fleet size', render: (sc) => fmtNum(sc.params.fleet) },
     { label: 'Demand', render: (sc) => fmtTph(sc.params.demand) },
-    { label: 'Analytic N required', render: (_sc, r) => (r ? fmtNum(r.analytic.nReq) : '—') },
-    { label: 'Simulated throughput', render: (_sc, r) => (r ? fmtTph(r.simulated.tph) : '—') },
-    { label: 'Utilization', render: (_sc, r) => (r ? fmtPercent(r.simulated.busy * 100) : '—') },
-    { label: 'Blocked', render: (_sc, r) => (r ? fmtPercent(r.simulated.blocked * 100) : '—') },
-    { label: 'p95 flow time', render: (_sc, r) => (r ? fmtSec(r.simulated.p95) : '—') },
-    { label: 'Meets demand', render: (_sc, r) => (r ? (r.simulated.met ? 'Yes' : 'No') : '—') },
+    { label: 'Fleet fits the loop', render: (sc) => (fleetFeasibility(sc.params).feasible ? 'Yes' : 'No') },
+    { label: 'Analytic N required', render: (_sc, r) => (r ? fmtNum(r.analytic.nReq) : DASH) },
+    { label: 'Simulated throughput', render: (_sc, r) => simCell(r, (s) => fmtTph(s.tph)) },
+    { label: 'Utilization', render: (_sc, r) => simCell(r, (s) => fmtPercent(s.busy * 100)) },
+    { label: 'Blocked', render: (_sc, r) => simCell(r, (s) => fmtPercent(s.blocked * 100)) },
+    { label: 'p95 flow time', render: (_sc, r) => simCell(r, (s) => fmtSec(s.p95)) },
+    { label: 'Meets demand', render: (_sc, r) => simCell(r, (s) => (s.met ? 'Yes' : 'No')) },
   ]
 
   return (

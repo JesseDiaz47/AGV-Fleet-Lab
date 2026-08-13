@@ -6,6 +6,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { analyze, type AnalyticResult } from '../lib/engine/analytic.ts'
 import { REPS, SIM_HOURS, avgStats, batchRun, type SimStats } from '../lib/engine/sim.ts'
+import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toAnalyticParams, toSimParams } from '../lib/simParams.ts'
 import type { Scenario } from '../types/domain.ts'
 
@@ -14,7 +15,8 @@ export type CompareStatus = 'idle' | 'running' | 'done'
 export interface CompareResult {
   scenarioId: string
   analytic: AnalyticResult
-  simulated: SimStats
+  /** `null` when the scenario's fleet cannot physically fit its loop — see engine/feasibility.ts. */
+  simulated: SimStats | null
 }
 
 export function useCompare() {
@@ -32,10 +34,18 @@ export function useCompare() {
       if (token !== tokenRef.current) return
       const sc = scenarios[i]
       const analytic = analyze(toAnalyticParams(sc.params))
-      const simParams = toSimParams(sc.params)
-      const reps: SimStats[] = []
-      for (let r = 0; r < REPS; r++) reps.push(batchRun(simParams, sc.params.seed + r, SIM_HOURS))
-      out.push({ scenarioId: sc.id, analytic, simulated: avgStats(reps) })
+      // The analytic pass is pure arithmetic and stays meaningful, but a fleet
+      // that cannot fit its loop has no simulation to report — comparing it
+      // against scenarios that ran would put an impossible layout in the same
+      // table as measured ones.
+      if (!fleetFeasibility(sc.params).feasible) {
+        out.push({ scenarioId: sc.id, analytic, simulated: null })
+      } else {
+        const simParams = toSimParams(sc.params)
+        const reps: SimStats[] = []
+        for (let r = 0; r < REPS; r++) reps.push(batchRun(simParams, sc.params.seed + r, SIM_HOURS))
+        out.push({ scenarioId: sc.id, analytic, simulated: avgStats(reps) })
+      }
       i++
       setResults(out.slice())
       if (i < scenarios.length) {

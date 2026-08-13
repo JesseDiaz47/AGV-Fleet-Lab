@@ -5,6 +5,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import { REPS, SIM_HOURS, avgStats, batchRun, type SimStats } from '../lib/engine/sim.ts'
+import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toSimParams } from '../lib/simParams.ts'
 import type { ScenarioParams } from '../types/domain.ts'
 
@@ -16,6 +17,8 @@ export function useValidate() {
   const tokenRef = useRef(0)
 
   const run = useCallback((params: ScenarioParams) => {
+    // The engine refuses a fleet that cannot fit the loop; don't ask it to.
+    if (!fleetFeasibility(params).feasible) return
     const token = ++tokenRef.current
     setStatus('running')
     setResult(null)
