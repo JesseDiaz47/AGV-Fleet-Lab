@@ -1,5 +1,7 @@
 # AGV Fleet Lab
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 AGV fleet-sizing tool: sizes a one-way-loop AGV fleet analytically, then
 **validates the answer with a discrete-event simulation** — congestion,
 blocking, station queues, battery/charging, structured demand, dispatch
