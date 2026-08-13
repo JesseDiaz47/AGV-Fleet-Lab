@@ -24,10 +24,12 @@ npm run typecheck   # tsc -b
 npm run build       # tsc -b && vite build
 npm run preview     # serve dist/
 npm run verify      # headless-Chromium workflow gate (after a build)
+npm run audit       # production + development dependency audit
 npm run check       # typecheck + lint + test + build
+npm run check:all   # audit + check + browser verification
 ```
 
-Run `npm run check` before considering a change done.
+Run `npm run check:all` before considering a change done. CI runs the same audit, static/unit/build gates, and production browser workflow on every pull request and push to `main`.
 
 ## Layout
 
