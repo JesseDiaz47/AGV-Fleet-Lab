@@ -15,6 +15,20 @@ import {
   type ShiftBlock,
 } from '../types/domain.ts'
 
+/**
+ * Ceilings on the variable-length fields. Nothing in the engine bounds these
+ * on its own: nextArrivalTime() rescans the whole profile per arrival, so
+ * block count multiplies straight into every sweep, and a scenario is free to
+ * arrive from a hand-edited JSON import rather than from the UI.
+ *
+ * 1000 blocks is 86.4 s of resolution across the 24h cycle — three orders of
+ * magnitude past the 2-4 blocks a real shift pattern uses. Ids are generated
+ * by createId() at ~20 chars, so 64 is headroom, not a constraint.
+ */
+const MAX_SHIFT_BLOCKS = 1000
+const MAX_NAME_CHARS = 200
+const MAX_ID_CHARS = 64
+
 function numOrDefault(raw: unknown, key: keyof typeof PARAM_LIMITS, fallback: number): number {
   const [min, max] = PARAM_LIMITS[key]
   const v = optionalNumber(raw, max, min)
@@ -34,7 +48,7 @@ function sanitizeWeights(raw: unknown, stations: number): number[] | null {
 }
 
 function sanitizeShiftProfile(raw: unknown): ShiftBlock[] | null {
-  if (!Array.isArray(raw) || raw.length === 0) return null
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_SHIFT_BLOCKS) return null
   const blocks: ShiftBlock[] = []
   for (const item of raw) {
     if (!isObject(item)) return null
@@ -86,8 +100,11 @@ export function sanitizeScenarioParams(raw: unknown): ScenarioParams {
 
 function sanitizeScenario(raw: unknown): Scenario | null {
   if (!isObject(raw)) return null
-  const id = typeof raw.id === 'string' && raw.id ? raw.id : null
-  const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name : null
+  // An over-long name truncates, but an over-long id drops the whole record:
+  // activeScenarioId and compareIds are matched by exact string, so a
+  // shortened id would quietly repoint those references at the wrong record.
+  const id = typeof raw.id === 'string' && raw.id && raw.id.length <= MAX_ID_CHARS ? raw.id : null
+  const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.slice(0, MAX_NAME_CHARS) : null
   if (!id || !name) return null
   const now = new Date().toISOString()
   const createdAt = typeof raw.createdAt === 'string' ? raw.createdAt : now

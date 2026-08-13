@@ -3,8 +3,8 @@
  * Fixed-step engine (Δt = 0.1 s), Poisson job arrivals, symmetric triangular
  * load/unload times, seeded PRNG — identical seed reproduces the run exactly.
  *
- * Ported 1:1 from post-apps/agv-fleet-lab/src/sim.js (v1 single-file tool).
- * Behavior must not change without a matching regression-test update — see
+ * Ported 1:1 from the v1 single-file tool this app rebuilds. Behavior must
+ * not change without a matching regression-test update — see
  * sim.selftest.test.ts.
  */
 import { mulberry32, triSample, percentile } from '../prng.ts'

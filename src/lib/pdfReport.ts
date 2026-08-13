@@ -2,9 +2,8 @@
  * Design-review PDF export: scenario identity/inputs, the analytic estimate,
  * the last simulation-validation result, the last fleet-size sweep, and the
  * plain-English verdict — everything a reviewer needs without opening the
- * app. Pattern follows vfd-command-center's pdfReport.ts (jspdf +
- * jspdf-autotable); the layout here is plainer since this is a design-review
- * document, not a photo-doc replica.
+ * app. Built on jspdf + jspdf-autotable; the layout is deliberately plain
+ * because this is a design-review document, not a photo-doc replica.
  */
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
