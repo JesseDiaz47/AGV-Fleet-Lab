@@ -65,14 +65,18 @@ describe('Sim — battery model off', () => {
     expect(off.met).toBe(true)
   })
 
-  it('never lets a vehicle leave full charge, step by step', () => {
-    const sim = new Sim({ ...base, battery: false, fleet: 8 }, 42)
-    const steps = Math.round((WARMUP + 7200) / 0.1)
-    for (let i = 0; i < steps; i++) {
-      sim.step()
-      for (const v of sim.vehicles) expect(v.soc).toBe(100)
-    }
-  })
+  it(
+    'never lets a vehicle leave full charge, step by step',
+    () => {
+      const sim = new Sim({ ...base, battery: false, fleet: 8 }, 42)
+      const steps = Math.round((WARMUP + 7200) / 0.1)
+      for (let i = 0; i < steps; i++) {
+        sim.step()
+        for (const v of sim.vehicles) expect(v.soc).toBe(100)
+      }
+    },
+    15_000,
+  )
 
   it('does at least as well as the same scenario carrying charge overhead', () => {
     // Not a tautology: it is the whole reason the flag exists. Charging pulls

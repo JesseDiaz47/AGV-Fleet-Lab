@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { buildDesignReviewPdf, openOrSharePdf, pdfFilename } from '../../lib/pdfReport.ts'
+import { loadPdfReport } from '../../lib/loadPdfReport.ts'
 import { buildVerdictLines } from '../../lib/verdict.ts'
 import type { AnalyticResult } from '../../lib/engine/analytic.ts'
 import type { SimStats } from '../../lib/engine/sim.ts'
@@ -22,6 +22,7 @@ export function ExportPanel({ scenario, analytic, validateResult, sweepResults }
     setBusy(true)
     setMsg(null)
     try {
+      const { buildDesignReviewPdf, openOrSharePdf, pdfFilename } = await loadPdfReport()
       const verdictLines = buildVerdictLines(analytic.nReq, scenario.params.fleet, sweepResults)
       const blob = buildDesignReviewPdf({ scenario, analytic, validate: validateResult, sweep: sweepResults, verdictLines })
       const delivery = await openOrSharePdf(blob, pdfFilename(scenario))

@@ -13,7 +13,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "verify": "node verify.js",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+    "audit": "npm audit",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "check:all": "npm run audit && npm run check && npm run verify"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

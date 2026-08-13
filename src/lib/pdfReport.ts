@@ -266,8 +266,15 @@ export async function openOrSharePdf(blob: Blob, filename: string): Promise<PdfD
   const file = new File([blob], filename, { type: 'application/pdf' })
   const shareData = { title: 'AGV Fleet Lab design review', files: [file] }
   if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
-    await navigator.share(shareData)
-    return 'shared'
+    try {
+      await navigator.share(shareData)
+      return 'shared'
+    } catch (error) {
+      // A cold dynamic import can outlive Safari's transient user activation.
+      // Fall through to the ordinary download in that case; preserve explicit
+      // user cancellation so the UI can report it accurately.
+      if (error instanceof DOMException && error.name === 'AbortError') throw error
+    }
   }
 
   const url = URL.createObjectURL(blob)

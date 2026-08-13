@@ -24,10 +24,12 @@ npm run typecheck   # tsc -b
 npm run build       # tsc -b && vite build
 npm run preview     # serve dist/
 npm run verify      # headless-Chromium workflow gate (after a build)
+npm run audit       # production + development dependency audit
 npm run check       # typecheck + lint + test + build
+npm run check:all   # audit + check + browser verification
 ```
 
-Run `npm run check` before considering a change done.
+Run `npm run check:all` before considering a change done. CI runs the same audit, static/unit/build gates, and production browser workflow on every pull request and push to `main`.
 
 ## Layout
 
@@ -64,7 +66,10 @@ Run `npm run check` before considering a change done.
 - `src/components/` — presentation only: `scenario/`, `inputs/`, `simview/`,
   `results/`, `compare/`, `export/`, `ui/`.
 - `src/styles/` — token-driven dark "control-room" palette (`tokens.css`,
-  ported verbatim from the v1 tool) plus reset/shell/screens/print.
+  ported verbatim from the v1 tool) plus `reset.css`, `shell.css` and
+  `screens.css`, all pulled together by `index.css`. There are no print
+  styles: the design-review deliverable is the generated PDF
+  (`lib/pdfReport.ts`), not a printed page.
 
 ## Rules to preserve
 

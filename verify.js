@@ -73,8 +73,31 @@ async function verifyAtViewport(browser, name, viewport, problems) {
     () => document.body.innerText.includes('Run comparison') && !document.body.innerText.includes('Running…'),
     { timeout: 60000 },
   )
-  const compareRows = await page.locator('.data-table--compare tbody tr').count()
-  if (compareRows < 5) problems.push(`[${name}] compare table rows: ${compareRows}`)
+  if (name === 'mobile') {
+    const visibleCompareTable = await page.locator('.compare-desktop-table').evaluate((el) => getComputedStyle(el).display)
+    if (visibleCompareTable !== 'none') problems.push(`[${name}] desktop comparison table should be hidden`)
+
+    const cards = page.locator('.compare-mobile-card:visible')
+    const cardCount = await cards.count()
+    if (cardCount !== 2) problems.push(`[${name}] expected 2 visible comparison cards, found ${cardCount}`)
+    for (let index = 0; index < cardCount; index += 1) {
+      const card = cards.nth(index)
+      const text = (await card.innerText()).trim()
+      for (const expected of ['Fleet size', 'Simulated throughput', 'Meets demand']) {
+        if (!text.includes(expected)) problems.push(`[${name}] comparison card ${index + 1} missing ${expected}`)
+      }
+      const values = await card.locator('dd').allTextContents()
+      if (values.length < 5 || values.some((value) => value.trim() === '')) {
+        problems.push(`[${name}] comparison card ${index + 1} has missing metric values`)
+      }
+      if (!values.some((value) => value.includes('/hr')) || !values.some((value) => value === 'Yes' || value === 'No')) {
+        problems.push(`[${name}] comparison card ${index + 1} has implausible metric values`)
+      }
+    }
+  } else {
+    const compareRows = await page.locator('.data-table--compare tbody tr').count()
+    if (compareRows < 5) problems.push(`[${name}] compare table rows: ${compareRows}`)
+  }
 
   // --- Export: CSV ---
   const [csvDownload] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Export CSV")')])

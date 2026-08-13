@@ -1,5 +1,6 @@
 # AGV Fleet Lab
 
+[![CI](https://github.com/JesseDiaz47/AGV-Fleet-Lab/actions/workflows/ci.yml/badge.svg)](https://github.com/JesseDiaz47/AGV-Fleet-Lab/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 AGV fleet-sizing tool: sizes a one-way-loop AGV fleet analytically, then
@@ -79,7 +80,9 @@ npm run typecheck   # tsc -b
 npm run build       # tsc -b && vite build
 npm run preview     # serve dist/
 npm run verify       # headless-Chromium workflow gate (after a build)
+npm run audit        # production + development dependency audit
 npm run check         # typecheck + lint + test + build, in that order
+npm run check:all     # audit + check + browser verification
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module layout and the
