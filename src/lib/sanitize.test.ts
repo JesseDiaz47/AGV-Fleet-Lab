@@ -152,6 +152,7 @@ describe('sanitizeState', () => {
     expect(scenario.name).toHaveLength(200)
     expect(scenario.params.shiftProfile).toHaveLength(1000)
 
+    expect(fleetFeasibility(scenario.params).feasible).toBe(true)
     expect(analyze(toAnalyticParams(scenario.params)).nReq).toBeGreaterThan(0)
     expect(batchRun(toSimParams(scenario.params), scenario.params.seed, SIM_HOURS).tph).toBeGreaterThan(0)
   })
