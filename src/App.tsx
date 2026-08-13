@@ -11,7 +11,6 @@ import { SweepSection } from './components/results/SweepSection.tsx'
 import { CompareView } from './components/compare/CompareView.tsx'
 import { ExportPanel } from './components/export/ExportPanel.tsx'
 import { analyze } from './lib/engine/analytic.ts'
-import { fleetFeasibility } from './lib/engine/feasibility.ts'
 import { toAnalyticParams } from './lib/simParams.ts'
 
 function App() {
@@ -30,24 +29,31 @@ function App() {
     importJson,
   } = useScenarios()
   const analytic = useMemo(() => analyze(toAnalyticParams(activeScenario.params)), [activeScenario.params])
-  const feasible = fleetFeasibility(activeScenario.params).feasible
 
   const validate = useValidate()
   const sweep = useSweep()
 
-  // A different scenario invalidates the last validation/sweep results —
-  // lifted here (rather than inside each card) so the combined PDF export
-  // can see both at once.
+  // Any change to WHAT IS BEING MODELLED invalidates the last validation/sweep
+  // results — lifted here (rather than inside each card) so the combined PDF
+  // export can see both at once.
   //
-  // Editing the geometry across the feasibility boundary invalidates them
-  // too. Without this, KPIs measured while the fleet still fit would keep
-  // showing "meets demand" underneath the notice saying the fleet no longer
-  // fits — and would follow that contradiction into the PDF.
+  // Both deps are load-bearing:
+  //   - `params` catches every field edit. `analytic` above recomputes from
+  //     the same object, so keying off anything narrower (an id, a feasibility
+  //     flag) leaves stale sim KPIs sitting beside a freshly recomputed
+  //     estimate — the cards disagree, the verdict compares this scenario's
+  //     analytic against the previous one's sweep, and the PDF exports the
+  //     contradiction as if it were one coherent run.
+  //   - `id` catches switching to a scenario that SHARES this params object:
+  //     duplicateScenario spreads the source record, so a duplicate and its
+  //     original hold the same reference until one of them is edited.
+  // Feasibility needs no dep of its own: it is derived from params, so every
+  // crossing of that boundary is already a params change.
   useEffect(() => {
     validate.reset()
     sweep.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeScenario.id, feasible])
+  }, [activeScenario.id, activeScenario.params])
 
   return (
     <div className="wrap">

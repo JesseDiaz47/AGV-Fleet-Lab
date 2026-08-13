@@ -194,8 +194,11 @@ export class Sim {
     this.vehicles = []
     for (let i = 0; i < P.fleet; i++) {
       // stagger initial charge — a synchronized fleet would hit the threshold
-      // together hours in and flood the bays (warm-start, keeps runs deterministic)
-      const soc = P.fleet === 1 ? P.targetPct : 45 + (i / (P.fleet - 1)) * (P.targetPct - 45)
+      // together hours in and flood the bays (warm-start, keeps runs deterministic).
+      // With the battery model off there is nothing to stagger and nothing to
+      // drain, so every vehicle sits at full for the whole run (see `drain`).
+      const stagger = P.fleet === 1 ? P.targetPct : 45 + (i / (P.fleet - 1)) * (P.targetPct - 45)
+      const soc = P.battery ? stagger : 100
       this.vehicles.push({
         id: i,
         pos: ((i + 0.35) * this.L) / P.fleet,
@@ -270,6 +273,24 @@ export class Sim {
       if (this.fwd(o.pos, v.pos) < this.P.minGap) return false // would land inside a follower's gap
     }
     return true
+  }
+
+  /**
+   * Battery drain for one step, scaled by `factor` (DWELL_DRAIN while stopped,
+   * 1 while moving).
+   *
+   * A NO-OP WHEN THE BATTERY MODEL IS OFF. `battery: false` means batteries
+   * are outside the model entirely — not "batteries that never charge". Every
+   * recharge path in step() is already gated on P.battery, so draining
+   * unconditionally would hand the fleet a battery it can only ever discharge:
+   * vehicles run flat, strand, and throughput collapses on the one setting the
+   * user chose to say batteries don't matter. It would also put the two halves
+   * of the tool in direct contradiction — analyze() zeroes chargeOverhead for
+   * this same flag, i.e. the analytic pass reads it as *no* battery penalty.
+   */
+  drain(v: Vehicle, factor = 1): void {
+    if (!this.P.battery) return
+    v.soc = Math.max(0, v.soc - this.drainMove * factor * DT)
   }
 
   tally(bucket: StateBucketKey, record: boolean): void {
@@ -388,7 +409,7 @@ export class Sim {
 
       if (v.state === ST.IDLE && v.offTrack) {
         // parked on the spur: sip power; grab a bay when needed (or to top up)
-        v.soc = Math.max(0, v.soc - this.drainMove * DWELL_DRAIN * DT)
+        this.drain(v, DWELL_DRAIN)
         if (
           P.battery &&
           this.charging.size < P.chargeBays &&
@@ -404,7 +425,7 @@ export class Sim {
 
       if (v.state === ST.LOADING || v.state === ST.UNLOADING) {
         v.dwellLeft -= DT
-        v.soc = Math.max(0, v.soc - this.drainMove * DWELL_DRAIN * DT)
+        this.drain(v, DWELL_DRAIN)
         if (v.dwellLeft <= 0) {
           if (v.state === ST.LOADING) {
             v.state = ST.TO_DROP
@@ -473,7 +494,7 @@ export class Sim {
           this.lastBlockedIds.add(v.id)
         }
         v.pos = mayReverse ? ((v.pos - move) % L + L) % L : (v.pos + move) % L
-        v.soc = Math.max(0, v.soc - this.drainMove * DT)
+        this.drain(v)
         if (arrived) {
           if (v.state === ST.TO_PICKUP) {
             // Count the pickup (post-warmup only) and remember whether it
@@ -509,8 +530,9 @@ export class Sim {
           // (we'll only set it again at the next dispatch).
           v.heading = 1
         }
-        if (v.soc <= 0 && v.state !== ST.CHARGING) {
-          // dead battery = fault; ops pull it off the path (it must not gridlock the loop)
+        if (P.battery && v.soc <= 0 && v.state !== ST.CHARGING) {
+          // dead battery = fault; ops pull it off the path (it must not gridlock the loop).
+          // Unreachable with the battery model off — `drain` holds soc at 100.
           v.state = ST.STRANDED
           v.offTrack = true
           this.strandedCount++
