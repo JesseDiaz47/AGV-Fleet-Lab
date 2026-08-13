@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { toCsv } from './csv.ts'
 import { statsToCsvRow, sweepToCsv } from './csvExport.ts'
 import type { SweepPoint } from './engine/sweep.ts'
 import type { SimStats } from './engine/sim.ts'
@@ -19,6 +20,15 @@ const sampleStats: SimStats = {
   reversePickups: 12,
   pickupsObserved: 84,
 }
+
+describe('toCsv', () => {
+  it('escapes header cells, not just row cells', () => {
+    // Headers are scenario names in a multi-scenario export, so they carry
+    // the same untrusted text a row cell does.
+    const csv = toCsv(['A,B', 'say "hi"', 'two\nlines', '=1+1'], [])
+    expect(csv).toBe('"A,B","say ""hi""","two\nlines",\'=1+1\n')
+  })
+})
 
 describe('sweepToCsv', () => {
   it('produces a header row plus one row per fleet size, rounded', () => {

@@ -21,13 +21,19 @@ export function csvField(value: string | number | null | undefined): string {
   return s
 }
 
-/** Build a CSV string from a header row and typed data rows. Trailing newline. */
+/**
+ * Build a CSV string from a header row and typed data rows. Trailing newline.
+ *
+ * Header cells go through csvField() too: a header is as likely to be user
+ * text (a column named after a record) as any row cell, and an unescaped one
+ * with a comma or newline in it silently shifts every column beneath it.
+ */
 export function toCsv(
   header: string[],
   rows: Array<Array<string | number | null | undefined>>,
 ): string {
   const lines = rows.map((row) => row.map(csvField).join(','))
-  return [header.join(','), ...lines].join('\n') + '\n'
+  return [header.map(csvField).join(','), ...lines].join('\n') + '\n'
 }
 
 /** Round a nullable number to a CSV cell string ('' for null). */
