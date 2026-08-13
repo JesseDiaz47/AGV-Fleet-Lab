@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { sanitizeScenarioParams, sanitizeState } from './sanitize.ts'
 import { defaultParams, makeScenario } from './defaults.ts'
+import { fleetFeasibility } from './engine/feasibility.ts'
 
 describe('sanitizeScenarioParams', () => {
   it('fills in defaults for a missing/non-object payload', () => {
@@ -108,5 +109,43 @@ describe('sanitizeState', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.value.compareIds).toEqual([a.id])
+  })
+})
+
+describe('sanitize and geometric feasibility', () => {
+  // Every one of these values is individually inside PARAM_LIMITS; only their
+  // combination is impossible. The sanitizer's job is to hand back exactly
+  // what was stored — clamping fleet or minGap here would silently rewrite a
+  // versioned scenario record into a different scenario. Refusing to SIMULATE
+  // it is the engine's job (see engine/feasibility.ts).
+  const impossible = { loopLen: 60, minGap: 20, fleet: 14 }
+
+  it('preserves an infeasible combination of individually valid values', () => {
+    const p = sanitizeScenarioParams({ ...defaultParams(), ...impossible })
+    expect(p.loopLen).toBe(60)
+    expect(p.minGap).toBe(20)
+    expect(p.fleet).toBe(14)
+  })
+
+  it('reports it as infeasible rather than repairing it', () => {
+    const p = sanitizeScenarioParams({ ...defaultParams(), ...impossible })
+    expect(fleetFeasibility(p).feasible).toBe(false)
+    expect(fleetFeasibility(p).maxFleet).toBe(2)
+  })
+
+  it('round-trips an imported infeasible scenario without touching its revision', () => {
+    const sc = { ...makeScenario('Tampered'), revision: 7, params: { ...defaultParams(), ...impossible } }
+    const result = sanitizeState({ scenarios: [sc], activeScenarioId: sc.id, compareIds: [] })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const restored = result.value.scenarios[0]
+    expect(restored.revision).toBe(7)
+    expect(restored.params.fleet).toBe(14)
+    expect(restored.params.minGap).toBe(20)
+    expect(restored.params.loopLen).toBe(60)
+  })
+
+  it('leaves a feasible scenario feasible', () => {
+    expect(fleetFeasibility(sanitizeScenarioParams(defaultParams())).feasible).toBe(true)
   })
 })

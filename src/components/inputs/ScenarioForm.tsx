@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NumberField } from '../ui/NumberField.tsx'
 import { BoolField } from '../ui/BoolField.tsx'
 import { sanitizeScenarioParams } from '../../lib/sanitize.ts'
+import { FeasibilityNotice } from '../ui/FeasibilityNotice.tsx'
 import { DISPATCH_RULES, DISPATCH_RULE_LABEL, PARAM_LIMITS, type Scenario, type ScenarioParams, type ShiftBlock } from '../../types/domain.ts'
 
 interface ScenarioFormProps {
@@ -83,6 +84,7 @@ export function ScenarioForm({ scenario, updateParams, renameActive }: ScenarioF
       )}
 
       <h3 className="field-group__title">Guide path</h3>
+      <FeasibilityNotice params={p} />
       <div className="field-grid">
         <NumberField label="Loop length" suffix="m" value={p.loopLen} min={LOOP_MIN} max={LOOP_MAX} onChange={(v) => updateParams({ loopLen: v })} />
         <NumberField
@@ -96,7 +98,7 @@ export function ScenarioForm({ scenario, updateParams, renameActive }: ScenarioF
         <NumberField label="Min gap" suffix="m" value={p.minGap} min={GAP_MIN} max={GAP_MAX} onChange={(v) => updateParams({ minGap: v })} />
         <BoolField label="Park idle vehicles at charge bay" checked={p.parkIdle} onChange={(v) => updateParams({ parkIdle: v })} />
         <BoolField
-          label="Allow reverse-direction empty pickup"
+          label="Allow reverse-direction empty pickup (experimental — one-way loop)"
           checked={p.allowReversePickup}
           onChange={(v) => updateParams({ allowReversePickup: v })}
         />

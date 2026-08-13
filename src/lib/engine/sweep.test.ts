@@ -10,12 +10,30 @@ describe('niceMax', () => {
   })
 })
 
+const defaultGeom = { loopLen: 400, minGap: 3 }
+
 describe('sweepSizes', () => {
   it('covers the analytic estimate plus headroom, capped at 14', () => {
-    const sizes = sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 })
+    const sizes = sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 }, defaultGeom)
     expect(sizes[0]).toBe(1)
     expect(sizes[sizes.length - 1]).toBeGreaterThanOrEqual(9)
     expect(sizes[sizes.length - 1]).toBeLessThanOrEqual(14)
+  })
+
+  it('omits fleet sizes that cannot physically fit on the loop', () => {
+    // 60 m loop with a 20 m gap holds 2 vehicles. Simulating 3..14 would
+    // produce a wall of 0/hr rows that look like congestion data.
+    const sizes = sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 }, { loopLen: 60, minGap: 20 })
+    expect(sizes).toEqual([1, 2])
+  })
+
+  it('returns nothing when not even one vehicle fits', () => {
+    expect(sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 }, { loopLen: 10, minGap: 20 })).toEqual([])
+  })
+
+  it('is unchanged for geometry with room to spare', () => {
+    const roomy = sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 }, { loopLen: 3000, minGap: 1 })
+    expect(roomy).toEqual(sweepSizes({ nReq: 6, nRaw: 3.63, derate: 0.6921 }, defaultGeom))
   })
 })
 

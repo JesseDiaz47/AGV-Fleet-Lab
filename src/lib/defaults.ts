@@ -27,7 +27,10 @@ export function defaultParams(): ScenarioParams {
     originWeights: null,
     destWeights: null,
     shiftProfile: null,
-    allowReversePickup: true,
+    // Experimental, and off by default: the supported guide path is one-way,
+    // and reverse travel on it is only representable under a give-way rule
+    // (see REVERSE_CLEARANCE in engine/sim.ts). Off = the v1 baseline.
+    allowReversePickup: false,
   }
 }
 
