@@ -82,6 +82,9 @@ npm run verify       # headless-Chromium workflow gate (after a build)
 npm run check         # typecheck + lint + test + build, in that order
 ```
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module layout and the
+invariants a change has to preserve.
+
 Regenerating the README media (after a build):
 
 ```bash
