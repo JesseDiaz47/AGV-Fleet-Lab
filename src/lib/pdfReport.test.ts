@@ -60,6 +60,52 @@ describe('buildDesignReviewPdf', () => {
     expect(REPS).toBeGreaterThan(0)
   })
 
+  it('returns shared after successful native file sharing', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+
+    const result = await openOrSharePdf(new Blob(['pdf'], { type: 'application/pdf' }), 'design-review.pdf')
+
+    expect(result).toBe('shared')
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ files: [expect.any(File)] }))
+  })
+
+  it('preserves native-share cancellation instead of downloading', async () => {
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL')
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
+    Object.defineProperty(navigator, 'share', {
+      value: vi.fn().mockRejectedValue(new DOMException('Canceled', 'AbortError')),
+      configurable: true,
+    })
+
+    await expect(openOrSharePdf(new Blob(['pdf'], { type: 'application/pdf' }), 'design-review.pdf')).rejects.toMatchObject({
+      name: 'AbortError',
+    })
+    expect(createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('falls back to a PDF download when native sharing loses user activation', async () => {
+    const opened: { href?: string; download?: string } = {}
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:share-fallback')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      opened.href = this.href
+      opened.download = this.download
+    })
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
+    Object.defineProperty(navigator, 'share', {
+      value: vi.fn().mockRejectedValue(new DOMException('User activation is required', 'NotAllowedError')),
+      configurable: true,
+    })
+
+    const result = await openOrSharePdf(new Blob(['pdf'], { type: 'application/pdf' }), 'design-review.pdf')
+
+    expect(result).toBe('opened')
+    expect(opened.href).toBe('blob:share-fallback')
+    expect(opened.download).toBe('design-review.pdf')
+  })
+
   it('opens a PDF preview when native file sharing is unavailable', async () => {
     const opened: { href?: string; download?: string; target?: string } = {}
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:design-review-preview')
