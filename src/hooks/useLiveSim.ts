@@ -6,7 +6,7 @@
  * editing the scenario form doesn't yank the live view out from under a
  * running watch; the user applies changes with an explicit restart.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DT, Sim, type StateTime } from '../lib/engine/sim.ts'
 import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toSimParams } from '../lib/simParams.ts'
@@ -67,14 +67,26 @@ function computeTiles(sim: Sim | null): LiveTiles {
 const BASE_RATE = 20
 
 export function useLiveSim(scenarioId: string, params: ScenarioParams) {
-  const simRef = useRef<Sim | null>(buildSim(params))
+  // useRef() evaluates its argument on EVERY render but keeps only the first
+  // value, so `useRef(buildSim(params))` would construct a whole Sim —
+  // stations, vehicles, two PRNG streams — and throw it away on every render.
+  // The rAF loop below bumps `frame` each tick, so that is ~60 discarded
+  // fleets per second for as long as the live view runs. Seed it lazily.
+  const simRef = useRef<Sim | null>(null)
+  const seeded = useRef(false)
+  if (!seeded.current) {
+    seeded.current = true
+    simRef.current = buildSim(params)
+  }
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [frame, setFrame] = useState(0)
   const [tiles, setTiles] = useState<LiveTiles>(() => computeTiles(simRef.current))
   const paramsRef = useRef(params)
   paramsRef.current = params
-  const feasible = fleetFeasibility(params).feasible
+  // Same reason, cheaper case: this walks down from loopLen/minGap on every
+  // render otherwise, and it only ever changes when params do.
+  const feasible = useMemo(() => fleetFeasibility(params).feasible, [params])
 
   const restart = useCallback((next: ScenarioParams = paramsRef.current) => {
     simRef.current = buildSim(next)

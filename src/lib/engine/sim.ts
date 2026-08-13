@@ -4,8 +4,10 @@
  * load/unload times, seeded PRNG — identical seed reproduces the run exactly.
  *
  * Ported 1:1 from the v1 single-file tool this app rebuilds. Behavior must
- * not change without a matching regression-test update — see
- * sim.selftest.test.ts.
+ * not change without a matching regression-test update — see sim.test.ts for
+ * the v1 pins (determinism, conservation, fleet performance) and the focused
+ * suites beside it: sim.battery.test.ts, sim.feasibility.test.ts,
+ * sim.reverse.test.ts, sim.spacing.test.ts.
  */
 import { mulberry32, triSample, percentile } from '../prng.ts'
 import { sampleOrigin, sampleDestination, nextArrivalTime, type ShiftBlock } from './demand.ts'
