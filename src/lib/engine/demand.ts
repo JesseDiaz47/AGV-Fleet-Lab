@@ -122,8 +122,11 @@ export function nextArrivalTime(
   }
   let t = from
   // Guard against a pathological all-zero-multiplier profile spinning
-  // forever; validated profiles (sanitize.ts) never produce this, but the
-  // function should still terminate defensively for arbitrary callers.
+  // forever. sanitize.ts does NOT rule this out — it only requires each
+  // multiplier to be >= 0, so an all-zero profile is a valid import — and a
+  // hand-built profile from any other caller is unconstrained. Hitting the
+  // guard means "this profile never generates an arrival", so returning the
+  // walked-to time is the right answer: demand is simply zero.
   for (let guard = 0; guard < 10000; guard++) {
     const mult = multiplierAt(shiftProfile, t)
     const segRemain = secondsToNextBoundary(shiftProfile, t)

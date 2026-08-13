@@ -64,7 +64,10 @@ Run `npm run check` before considering a change done.
 - `src/components/` — presentation only: `scenario/`, `inputs/`, `simview/`,
   `results/`, `compare/`, `export/`, `ui/`.
 - `src/styles/` — token-driven dark "control-room" palette (`tokens.css`,
-  ported verbatim from the v1 tool) plus reset/shell/screens/print.
+  ported verbatim from the v1 tool) plus `reset.css`, `shell.css` and
+  `screens.css`, all pulled together by `index.css`. There are no print
+  styles: the design-review deliverable is the generated PDF
+  (`lib/pdfReport.ts`), not a printed page.
 
 ## Rules to preserve
 
