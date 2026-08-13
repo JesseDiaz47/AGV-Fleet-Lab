@@ -365,6 +365,56 @@
   color: var(--ink);
   background: rgba(57, 135, 229, 0.08);
 }
+.compare-mobile-cards {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .compare-desktop-table {
+    display: none;
+  }
+  .compare-mobile-cards {
+    display: grid;
+    gap: 10px;
+  }
+  .compare-mobile-card {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+  }
+  .compare-mobile-card h3 {
+    margin: 0 0 6px;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .compare-mobile-card dl {
+    margin: 0;
+  }
+  .compare-mobile-card dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--grid);
+  }
+  .compare-mobile-card dl > div:last-child {
+    border-bottom: 0;
+  }
+  .compare-mobile-card dt,
+  .compare-mobile-card dd {
+    margin: 0;
+    font-size: 12px;
+  }
+  .compare-mobile-card dt {
+    color: var(--ink-3);
+  }
+  .compare-mobile-card dd {
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
 
 /* Scenario manager */
 .scenario-list {

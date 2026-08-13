@@ -69,7 +69,7 @@ export function CompareView({ scenarios, compareIds }: CompareViewProps) {
         </button>
       </div>
       {status === 'idle' && <p className="empty-hint">Not run yet for this selection.</p>}
-      <div className="table-scroll">
+      <div className="table-scroll compare-desktop-table">
         <table className="data-table data-table--compare">
           <thead>
             <tr>
@@ -90,6 +90,24 @@ export function CompareView({ scenarios, compareIds }: CompareViewProps) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="compare-mobile-cards" role="list" aria-label="Scenario comparison summaries">
+        {selected.map((sc) => {
+          const result = resultFor(sc.id)
+          return (
+            <section className="compare-mobile-card" role="listitem" aria-label={sc.name} key={sc.id}>
+              <h3>{sc.name}</h3>
+              <dl>
+                {rows.map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.render(sc, result)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )
+        })}
       </div>
     </section>
   )
