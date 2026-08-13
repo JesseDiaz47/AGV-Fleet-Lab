@@ -3,3 +3,6 @@ dist/
 node_modules/.tmp/
 *.tsbuildinfo
 .DS_Store
+
+# Raw capture intermediates — the committed GIF/MP4/PNGs are the deliverable
+docs/media/raw/
