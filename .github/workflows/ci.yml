@@ -14,10 +14,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: Typecheck, lint, test, build, and browser verify
+  verify:
+    name: Typecheck, lint, test, and build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Check out repository
@@ -38,14 +38,38 @@ jobs:
       - name: Run static and unit gates
         run: npm run check
 
+  browser-smoke:
+    name: Browser workflow verification
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      # verify.js drives a real `vite preview` it boots itself, so this job
+      # needs its own dist/ — the verify job's build does not cross over.
+      - name: Build production bundle
+        run: npm run build
 
       - name: Run production workflow verification
         run: npm run verify
 
-      - name: Upload verification screenshots on failure
-        if: failure()
+      - name: Upload verification screenshots
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verification-screenshots
