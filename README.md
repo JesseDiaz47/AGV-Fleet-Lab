@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/JesseDiaz47/AGV-Fleet-Lab/actions/workflows/ci.yml/badge.svg)](https://github.com/JesseDiaz47/AGV-Fleet-Lab/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Last Commit](https://img.shields.io/github/last-commit/JesseDiaz47/AGV-Fleet-Lab)](https://github.com/JesseDiaz47/AGV-Fleet-Lab/commits/main)
 
 AGV fleet-sizing tool: sizes a one-way-loop AGV fleet analytically, then
 **validates the answer with a discrete-event simulation** — congestion,
