@@ -226,28 +226,47 @@ describe('spur re-entry does not starve or corrupt state', () => {
   it('keeps charge-bay ownership consistent with vehicle state at every step', () => {
     const sim = new Sim({ ...base, fleet: 8, runtimeH: 1, chargeH: 2 }, 42)
     const steps = Math.round((WARMUP + 1800) / 0.1)
-    for (let i = 0; i < steps; i++) {
+    // Check with plain comparisons and assert once, as the starvation test
+    // above does: an expect() per vehicle per step costs more than the 27k
+    // simulation steps it is guarding.
+    let violation: string | null = null
+    for (let i = 0; i < steps && violation === null; i++) {
       sim.step()
-      expect(sim.charging.size).toBeLessThanOrEqual(base.chargeBays)
+      if (sim.charging.size > base.chargeBays) {
+        violation = `step ${i}: ${sim.charging.size} bays in use, capacity ${base.chargeBays}`
+        break
+      }
       for (const v of sim.vehicles) {
-        expect(sim.charging.has(v.id), `veh ${v.id} state ${v.state} vs bay ownership`).toBe(v.state === ST.CHARGING)
+        if (sim.charging.has(v.id) !== (v.state === ST.CHARGING)) {
+          violation = `step ${i}: veh ${v.id} state ${v.state} vs bay ownership ${sim.charging.has(v.id)}`
+          break
+        }
       }
     }
+    expect(violation).toBeNull()
   })
 
   it('keeps station waiting counts and the pending queue honest', () => {
     const sim = new Sim({ ...base, fleet: 6 }, 42)
     const steps = Math.round((WARMUP + 1800) / 0.1)
-    for (let i = 0; i < steps; i++) {
+    let violation: string | null = null
+    for (let i = 0; i < steps && violation === null; i++) {
       sim.step()
-      for (const st of sim.stations) expect(st.waiting).toBeGreaterThanOrEqual(0)
+      for (const st of sim.stations) {
+        if (st.waiting < 0) {
+          violation = `step ${i}: station waiting count ${st.waiting}`
+          break
+        }
+      }
+      if (violation !== null) break
       // Every job is either pending, or held by exactly one vehicle.
       const held = sim.vehicles.filter((v) => v.job !== null).length
       const assignedStates = sim.vehicles.filter(
         (v) => v.state === ST.TO_PICKUP || v.state === ST.LOADING || v.state === ST.TO_DROP || v.state === ST.UNLOADING,
       ).length
-      expect(held).toBe(assignedStates)
+      if (held !== assignedStates) violation = `step ${i}: ${held} jobs held vs ${assignedStates} assigned states`
     }
+    expect(violation).toBeNull()
     // Waiting counts must reconcile with jobs not yet picked up.
     const totalWaiting = sim.stations.reduce((a, s) => a + s.waiting, 0)
     const notYetPicked = sim.pending.length + sim.vehicles.filter((v) => v.state === ST.TO_PICKUP).length
@@ -257,12 +276,17 @@ describe('spur re-entry does not starve or corrupt state', () => {
   it('never lets battery drop below zero or above 100', () => {
     const sim = new Sim({ ...base, fleet: 8, runtimeH: 1, chargeH: 2 }, 42)
     const steps = Math.round((WARMUP + 1800) / 0.1)
-    for (let i = 0; i < steps; i++) {
+    let violation: string | null = null
+    for (let i = 0; i < steps && violation === null; i++) {
       sim.step()
       for (const v of sim.vehicles) {
-        expect(v.soc).toBeGreaterThanOrEqual(0)
-        expect(v.soc).toBeLessThanOrEqual(100)
+        // Negated range check, so a NaN soc is a violation rather than a pass.
+        if (!(v.soc >= 0 && v.soc <= 100)) {
+          violation = `step ${i}: veh ${v.id} soc ${v.soc}`
+          break
+        }
       }
     }
+    expect(violation).toBeNull()
   })
 })
