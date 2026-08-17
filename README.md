@@ -91,6 +91,20 @@ npm run check:all     # audit + check + browser verification
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module layout and the
 invariants a change has to preserve.
 
+### Continuous integration
+
+Every push and pull request runs two jobs:
+
+- **`verify`** — `npm audit`, then `npm run check` (typecheck → lint → test →
+  build). This is the gate that has to be green.
+- **`browser-smoke`** — gated behind `verify` with `needs:`, so a failing gate
+  never pays for a Chromium install. Installs Chromium, builds, and runs
+  `npm run verify` against a real `vite preview`.
+
+`browser-smoke` uploads `verify-desktop.png` and `verify-mobile.png` as run
+artifacts on **every** run, passing or failing — so a reviewer can see what the
+app actually rendered at both widths without checking the branch out.
+
 Regenerating the README media (after a build):
 
 ```bash
