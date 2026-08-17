@@ -137,6 +137,37 @@ A gate that only checks *presence* can pass a broken render — a chart path
 that exists but is drawn off-canvas still counts as a path. Prefer assertions
 on values and coordinates over assertions that an element exists.
 
+### Table scrolling is deliberate — measured, not assumed
+
+At mobile widths the fleet-size sweep table is wider than the column it sits
+in. Measured in Chromium at 390 px: `.table-scroll` reports a 525 px scroll
+width against a 324 px client width, so `p95 flow time` and `Meets demand` sit
+behind about 200 px of horizontal scroll. That is the intent, not an oversight
+— `.table-scroll` is `overflow-x: auto` and `.data-table td` is
+`white-space: nowrap` exactly so a wide numeric table scrolls inside its own
+box rather than squashing its columns or dragging the page sideways. `verify.js`
+separately asserts the *page* never scrolls horizontally (≤ 2 px, both widths).
+
+Keyboard access was checked rather than assumed: in headless Chromium the
+scroll container is reachable with Tab at mobile width, where it genuinely
+scrolls, and is correctly skipped at desktop width, where scroll width equals
+client width. That is Chromium's focusable-scrollers behavior, so no `tabindex`
+is hard-coded here — a static one would plant a dead tab stop on desktop where
+there is nothing to scroll. **Known limitation:** WebKit does not make
+scrollers focusable, so keyboard-only access to those two columns is not
+guaranteed on Safari. If that becomes a supported requirement the fix is
+`tabindex="0"` plus `role="region"` and an accessible name on `.table-scroll`
+— not a table redesign.
+
+No conclusion is reachable *only* by scrolling: the chart above the table plots
+throughput against the demand line, and the Verdict card below states the
+meets-demand answer in words.
+
+Two labels clip by design and are deliberately left alone — scenario names in
+the sidebar list (`text-overflow: ellipsis`; the full name is in the Name field
+of the selected scenario), and the dispatch-rule `<select>`, a native control
+that shows its full option text when opened.
+
 ## Media
 
 `capture.js` drives the built app and writes the README screenshots plus a
