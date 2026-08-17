@@ -60,10 +60,17 @@ Run `npm run check:all` before considering a change done. CI runs the same audit
     shared by the on-screen card and the PDF so they cannot disagree.
   - `csvExport.ts`, `pdfReport.ts` — export surfaces.
   - `prng.ts`, `format.ts`, `csv.ts`, `download.ts`, `id.ts`, `validate.ts`,
-    `persistence.ts`, `backup.ts`, `store.ts` — copied as-is from `arsenal`, a
-    private copy-from utility library (a source tree, not a package). Do not
-    fork these; if a change is needed, make it upstream in the arsenal and
-    re-copy, so the files stay identical.
+    `persistence.ts`, `backup.ts` — small general-purpose modules with no AGV
+    domain knowledge in them. They began in a personal collection of reusable
+    utilities and near-identical copies live in other projects of mine, which
+    is worth knowing if you find one elsewhere — but there is no upstream to
+    sync with and nothing propagates. **They are maintained here like every
+    other file in this repository:** change them in place, with tests, in an
+    ordinary pull request.
+  - `store.ts` — despite sitting next to those, this one is not generic. It
+    wires the persistence and backup primitives to this app's domain (one
+    storage key, `sanitizeState`, `defaultState`, `APP_SIGNATURE`) and is the
+    only place `sanitizeState` is consumed.
 - `src/hooks/` — `useScenarios` (CRUD + persistence), `useLiveSim` (the
   animated loop), `useValidate`, `useSweep`, `useCompare`.
 - `src/components/` — presentation only: `scenario/`, `inputs/`, `simview/`,

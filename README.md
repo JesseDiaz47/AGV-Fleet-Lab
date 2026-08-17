@@ -94,7 +94,8 @@ npm run check:all     # audit + check + browser verification
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module layout and the
-invariants a change has to preserve.
+invariants a change has to preserve, and [CONTRIBUTING.md](CONTRIBUTING.md) for
+how to work on it. Security reporting is covered in [SECURITY.md](SECURITY.md).
 
 ### Continuous integration
 
