@@ -11,7 +11,7 @@ AGV fleet-sizing tool: sizes a one-way-loop AGV fleet analytically, then
 blocking, station queues, battery/charging, structured demand, dispatch
 rules, and shift profiles.
 
-![A simulated AGV fleet running the one-way loop: vehicles picking up, dropping off, charging, and queueing at stations](docs/media/live-sim.gif)
+![A simulated AGV fleet running the one-way loop: vehicles picking up, dropping off, charging, and queueing at stations](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/live-sim.gif)
 
 Built by Jesse Diaz. Educational/planning-grade tool — not a substitute for a
 full DES study (Plant Simulation / FlexSim / AnyLogic) or vendor sign-off. All
@@ -40,7 +40,7 @@ verdict is judged against the load the run actually offered, not against the
 nominal rate. [How "meets demand" is decided](#how-meets-demand-is-decided)
 sets out the arithmetic and what it does not license.
 
-![Analytic estimate card showing 6 vehicles required, next to a simulation validation card reporting 39.12 jobs/hr at 69% utilization](docs/media/01-analytic-validate.png)
+![Analytic estimate card showing 6 vehicles required, next to a simulation validation card reporting 39.12 jobs/hr at 69% utilization](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/01-analytic-validate.png)
 
 ### 2. Sweep every fleet size to find the knee
 
@@ -48,7 +48,7 @@ Each fleet size is simulated and plotted against demand. The knee is the
 smallest fleet that meets demand; past it, throughput flattens while extra
 vehicles just add congestion.
 
-![Fleet-size sweep: throughput curve flattening against the demand line, blocked-share panel below, and a table of per-fleet results with fleet 5 highlighted](docs/media/03-sweep.png)
+![Fleet-size sweep: throughput curve flattening against the demand line, blocked-share panel below, and a table of per-fleet results with fleet 5 highlighted](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/03-sweep.png)
 
 ### 3. Compare scenarios side by side
 
@@ -56,7 +56,7 @@ Named scenarios are versioned records, so a comparison is a real diff rather
 than a re-typed guess. Dropping from 5 vehicles to 3 costs 8 jobs/hr — and
 takes p95 flow time from 615 s to 6,161 s.
 
-![Comparison table of two scenarios: fleet 5 meets demand at 39.1 jobs/hr, fleet 3 fails at 31.2 jobs/hr with a p95 flow time ten times worse](docs/media/04-compare.png)
+![Comparison table of two scenarios: fleet 5 meets demand at 39.1 jobs/hr, fleet 3 fails at 31.2 jobs/hr with a p95 flow time ten times worse](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/04-compare.png)
 
 ### 4. Export for design review
 
@@ -64,7 +64,7 @@ CSV for the sweep table, and a PDF report carrying the scenario inputs, both
 model results, and the plain-English verdict — so a reviewer never has to open
 the app.
 
-![Design-review export panel](docs/media/05-export.png)
+![Design-review export panel](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/05-export.png)
 
 ▶ **[Full walkthrough (27s, silent MP4)](docs/media/tour.mp4)** — the whole
 flow above, end to end.
@@ -72,7 +72,7 @@ flow above, end to end.
 <details>
 <summary>The full interface in one shot</summary>
 
-![The complete AGV Fleet Lab interface: scenario list and parameter form on the left, live track view and results on the right](docs/media/00-overview.png)
+![The complete AGV Fleet Lab interface: scenario list and parameter form on the left, live track view and results on the right](https://raw.githubusercontent.com/JesseDiaz47/AGV-Fleet-Lab/main/docs/media/00-overview.png)
 
 </details>
 
