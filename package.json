@@ -2,6 +2,7 @@
   "name": "agv-fleet-lab",
   "private": true,
   "version": "2.0.0",
+  "license": "MIT",
   "type": "module",
   "description": "AGV fleet-sizing tool: analytic first pass validated against a seeded discrete-event simulation. Named scenarios, structured demand, dispatch-rule comparison, and design-review export.",
   "scripts": {
