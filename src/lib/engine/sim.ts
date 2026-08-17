@@ -613,6 +613,36 @@ export const BUCKETS: BucketDef[] = [
 export const SIM_HOURS = 8
 export const REPS = 2
 
+/**
+ * Seed for repetition `rep` of a batched run started from `baseSeed` — the
+ * ONE definition of that policy. Every batched caller (validate, sweep,
+ * compare), the on-screen hint that names the seeds, and every regression pin
+ * must go through this function.
+ *
+ * Consecutive, not spaced. Two reasons, in this order:
+ *   - it is the published contract: the validation card tells the user which
+ *     seeds ran ("2 seeded reps, 42/43"), and every number in the README and
+ *     the screenshots was produced by it;
+ *   - spacing would buy nothing measurable. Over seeds 1..60 on the default
+ *     scenario, the mean |Δ realized offered rate| between adjacent seeds is
+ *     2.85/hr against 2.92/hr between seeds 30 apart — statistically
+ *     indistinguishable, because mulberry32's output mixer decorrelates
+ *     neighbouring seeds.
+ *
+ * This exists because the policy was previously copied by hand into ten
+ * places and drifted into two dialects: the app batched `seed + r` while the
+ * regression tests batched `seed + r * 7919` and pinned numbers the app never
+ * displayed.
+ *
+ * Reps of two scenarios whose seeds differ by less than REPS do overlap
+ * (42/43 vs 43/44). That is second-order next to the ±2.24 jobs/hr Poisson
+ * sampling error of a single 8 h run, and it is not what limits the estimate —
+ * more reps or longer runs are, not a wider seed gap.
+ */
+export function repSeed(baseSeed: number, rep: number): number {
+  return baseSeed + rep
+}
+
 export function batchRun(P: SimParams, seed: number, hours: number): SimStats {
   const sim = new Sim(P, seed)
   sim.runFor(WARMUP + hours * 3600)

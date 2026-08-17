@@ -1,4 +1,4 @@
-import { BUCKETS, type SimStats } from '../../lib/engine/sim.ts'
+import { BUCKETS, REPS, repSeed, type SimStats } from '../../lib/engine/sim.ts'
 import type { ValidateStatus } from '../../hooks/useValidate.ts'
 import { fmtNum, fmtPercent, unit } from '../../lib/format.ts'
 import { fleetFeasibility } from '../../lib/engine/feasibility.ts'
@@ -32,9 +32,16 @@ export function ValidateCard({ params, status, result, onRun }: ValidateCardProp
         </button>
       </div>
       <FeasibilityNotice params={params} />
+      {/*
+        The seed list is derived from `repSeed`, never written out here: this
+        sentence is the app's public statement of which reps ran, and a
+        hand-written copy of the policy is exactly what drifted out of sync
+        with the engine before (see repSeed in engine/sim.ts).
+      */}
       <p className="card-hint">
-        Runs {params.fleet} vehicles for an 8h batch (2 seeded reps, {params.seed}/{params.seed + 1}) and
-        checks whether throughput and backlog hold at that fleet size.
+        Runs {params.fleet} vehicles for an 8h batch ({REPS} seeded reps,{' '}
+        {Array.from({ length: REPS }, (_, r) => repSeed(params.seed, r)).join('/')}) and checks whether
+        throughput and backlog hold at that fleet size.
       </p>
       {status === 'idle' && feasible && <p className="empty-hint">Not run yet for this scenario.</p>}
       {status === 'running' && <p className="empty-hint">Simulating…</p>}

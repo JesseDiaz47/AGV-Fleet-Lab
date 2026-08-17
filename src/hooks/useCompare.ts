@@ -5,7 +5,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import { analyze, type AnalyticResult } from '../lib/engine/analytic.ts'
-import { REPS, SIM_HOURS, avgStats, batchRun, type SimStats } from '../lib/engine/sim.ts'
+import { REPS, SIM_HOURS, avgStats, batchRun, repSeed, type SimStats } from '../lib/engine/sim.ts'
 import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toAnalyticParams, toSimParams } from '../lib/simParams.ts'
 import type { Scenario } from '../types/domain.ts'
@@ -43,7 +43,7 @@ export function useCompare() {
       } else {
         const simParams = toSimParams(sc.params)
         const reps: SimStats[] = []
-        for (let r = 0; r < REPS; r++) reps.push(batchRun(simParams, sc.params.seed + r, SIM_HOURS))
+        for (let r = 0; r < REPS; r++) reps.push(batchRun(simParams, repSeed(sc.params.seed, r), SIM_HOURS))
         out.push({ scenarioId: sc.id, analytic, simulated: avgStats(reps) })
       }
       i++

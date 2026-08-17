@@ -4,7 +4,7 @@
  * setTimeout so a click doesn't freeze the UI thread.
  */
 import { useCallback, useRef, useState } from 'react'
-import { REPS, SIM_HOURS, avgStats, batchRun, type SimStats } from '../lib/engine/sim.ts'
+import { REPS, SIM_HOURS, avgStats, batchRun, repSeed, type SimStats } from '../lib/engine/sim.ts'
 import { fleetFeasibility } from '../lib/engine/feasibility.ts'
 import { toSimParams } from '../lib/simParams.ts'
 import type { ScenarioParams } from '../types/domain.ts'
@@ -27,7 +27,7 @@ export function useValidate() {
     let rep = 0
     const step = () => {
       if (token !== tokenRef.current) return // superseded by a newer run/reset
-      reps.push(batchRun(simParams, params.seed + rep, SIM_HOURS))
+      reps.push(batchRun(simParams, repSeed(params.seed, rep), SIM_HOURS))
       rep++
       if (rep < REPS) {
         setTimeout(step, 0)
