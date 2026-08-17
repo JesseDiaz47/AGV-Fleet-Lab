@@ -39,7 +39,10 @@ Run `npm run check:all` before considering a change done. CI runs the same audit
   - `engine/` — the model core, framework-free: plain args in, plain values
     out.
     - `analytic.ts` — the Egbelu-style first pass (`analyze`).
-    - `sim.ts` — the discrete-event simulation (`Sim`, `batchRun`, `avgStats`).
+    - `sim.ts` — the discrete-event simulation (`Sim`, `batchRun`, `avgStats`,
+      `repSeed`). The `met` criterion and what it does and does not license are
+      written up in the README under "How 'meets demand' is decided" — read it
+      before changing anything that feeds a verdict.
     - `track.ts`, `demand.ts`, `dispatch.ts` — guide-path geometry, structured
       and shift-profile demand, dispatch strategies.
     - `feasibility.ts` — `fleetFeasibility`, the geometric precondition:
@@ -79,6 +82,16 @@ Run `npm run check:all` before considering a change done. CI runs the same audit
 - **No `dangerouslySetInnerHTML`.** The sweep chart and any other string-built
   markup carried over from the v1 tool must be real JSX, not template-literal
   HTML/SVG strings.
+- **One batched-repetition seed policy.** Repetition `r` of a batch runs on
+  `repSeed(scenario.seed, r)` — `engine/sim.ts`, beside `REPS`/`SIM_HOURS`.
+  Validation, the sweep, comparison, the seed list printed on the validation
+  card, and every regression pin all call it; none of them writes the
+  arithmetic out. This is not style. The policy used to be hand-copied into ten
+  places, the app drifted to `seed + r` while the tests drifted to
+  `seed + r * 7919`, and the suite spent that time pinning 41.6 jobs/hr — a
+  number the app never produced. `useValidate.test.ts` and `useSweep.test.ts`
+  compare the hooks against an independently computed reference so the two
+  cannot separate again.
 - **Regression pin.** `lib/engine` carries Vitest tests reproducing the v1
   tool's 15 hand-checked self-tests exactly (cycle 326.667 s, capacity
   11.02/hr, derate 0.6921, analytic N=6/5, determinism, state-time
