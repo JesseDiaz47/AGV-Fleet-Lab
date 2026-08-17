@@ -5,7 +5,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import { analyze } from '../lib/engine/analytic.ts'
-import { REPS, SIM_HOURS, avgStats, batchRun, type SimStats } from '../lib/engine/sim.ts'
+import { REPS, SIM_HOURS, avgStats, batchRun, repSeed, type SimStats } from '../lib/engine/sim.ts'
 import { sweepSizes, type SweepPoint } from '../lib/engine/sweep.ts'
 import { toAnalyticParams, toSimParams } from '../lib/simParams.ts'
 import type { ScenarioParams } from '../types/domain.ts'
@@ -41,7 +41,7 @@ export function useSweep() {
       if (token !== tokenRef.current) return
       const n = sizes[i]
       const reps: SimStats[] = []
-      for (let r = 0; r < REPS; r++) reps.push(batchRun({ ...simParams, fleet: n }, params.seed + r, SIM_HOURS))
+      for (let r = 0; r < REPS; r++) reps.push(batchRun({ ...simParams, fleet: n }, repSeed(params.seed, r), SIM_HOURS))
       points.push(toPoint(n, avgStats(reps)))
       i++
       setResults(points.slice())
