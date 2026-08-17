@@ -159,8 +159,10 @@ end-of-run pending backlog ≤ max(8, backlog at end of warm-up + 5)
 Throughput is scored against the work the run was *given* because a fleet
 cannot complete jobs that never arrived; scoring it against the nominal 40
 would penalise it for the arrival sample. The backlog clause is what stops a
-fleet from passing while quietly falling behind — a saturated system can track
-its arrival rate for a while and still accumulate an unbounded queue.
+fleet from passing while quietly falling behind: the 2% slack in the first test
+would otherwise be satisfied indefinitely by a fleet running 2% short, whose
+queue grows without bound. Requiring the end-of-run backlog to stay near where
+it stood at the end of warm-up catches exactly that case.
 
 A batch is `REPS` repetitions and **every one must pass** — `avgStats` computes
 `met` as `list.every(...)`, so one bad repetition fails the batch. The reported
