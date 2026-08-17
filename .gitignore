@@ -6,3 +6,7 @@ node_modules/.tmp/
 
 # Raw capture intermediates — the committed GIF/MP4/PNGs are the deliverable
 docs/media/raw/
+
+# Local AI-agent state — per-machine, never part of the project
+.claude/
+.hermes/
